@@ -1,0 +1,8 @@
+{
+  "short_name": "AVOCarbon Map Competitor",
+  "name": "AVOCarbon Map Competitor",
+  "start_url": "./",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
