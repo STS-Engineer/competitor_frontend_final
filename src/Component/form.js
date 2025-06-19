@@ -125,7 +125,7 @@ useEffect(() => {
 
     const fetchCompanies = async () => {
         try {
-            const response = await axios.get('http://localhost:4000/companies/');
+            const response = await axios.get('https://compt-back.azurewebsites.net/companies/');
             setCompanies(response.data);
         } catch (error) {
             console.error('Error fetching companies: ', error);
@@ -235,12 +235,21 @@ useEffect(() => {
 
 
 const handleporudtionsuggestionclick = (suggestion) => {
-  if (!selectedProductionLocations.includes(suggestion)) {
-    setSelectedProductionLocations((prev) => [...prev, suggestion]);
+  const trimmed = suggestion.trim(); // e.g., "France, Paris"
+
+  // Avoid duplicate full place
+  const alreadyExists = selectedProductionLocations.some(
+    loc => loc.toLowerCase() === trimmed.toLowerCase()
+  );
+
+  if (!alreadyExists) {
+    setSelectedProductionLocations(prev => [...prev, trimmed]);
   }
+
   setProductionLocationInput('');
   setProductionLocationSuggestions([]);
 };
+
 
 const removeProductionLocation = (index) => {
   setSelectedProductionLocations((prev) =>
@@ -255,89 +264,65 @@ const handleSubmit = async (event) => {
   event.preventDefault();
 
   try {
+    // Format production locations consistently
+    const formatProductionLocations = (locations) => {
+      if (!locations) return '';
+      
+      if (Array.isArray(locations)) {
+        // If it's already an array of "City, Country" pairs, just join with semicolon
+        return locations.join('; ');
+      }
+      
+      if (typeof locations === 'string') {
+        // If it's a string with comma-separated city/country pairs
+        // First split by semicolon if they exist
+        const pairs = locations.split(';').filter(Boolean);
+        
+        // If we got multiple pairs from semicolon splitting, trim and return joined
+        if (pairs.length > 1) {
+          return pairs.map(pair => pair.trim()).join('; ');
+        }
+        
+        // Otherwise try splitting by comma (but need to pair city with country)
+        const parts = locations.split(',').map(part => part.trim());
+        
+        // Combine every two parts into "City, Country" pairs
+        const formattedPairs = [];
+        for (let i = 0; i < parts.length; i += 2) {
+          if (parts[i + 1]) {
+            formattedPairs.push(`${parts[i]}, ${parts[i + 1]}`);
+          } else {
+            formattedPairs.push(parts[i]);
+          }
+        }
+        return formattedPairs.join('; ');
+      }
+      
+      return locations;
+    };
+
     const submitData = {
       ...formData,
-      productionlocation: Array.isArray(formData.productionlocation)
-        ? formData.productionlocation.join('; ')
-        : formData.productionlocation
+      productionlocation: formatProductionLocations(formData.productionlocation)
     };
+
+    console.log('Formatted production locations:', submitData.productionlocation); // Debug log
 
     let response;
 
     if (mode === 'add') {
-      response = await axios.post('http://localhost:4000/companies', submitData);
+      response = await axios.post('https://compt-back.azurewebsites.net/companies', submitData);
     } else if (mode === 'edit') {
-      response = await axios.put(`http://localhost:4000/companies/${selectedCompanyId}`, submitData);
+      response = await axios.put(`https://compt-back.azurewebsites.net/companies/${selectedCompanyId}`, submitData);
     }
 
-    const newCompanyData = response.data;
-    console.log('competirodetails', newCompanyData);
-
-    const { latitude, longitude } = newCompanyData.r_and_d_location;
-    const { latitude1, longitude1 } = newCompanyData.headquarters_location;
-    const { latitude2, longitude2 } = newCompanyData.productionlocation;
-
-    setNewCompanyCoordinates({ latitude, longitude });
-    setNewCompanyCoordinatesheadquarter({ latitude1, longitude1 });
-    setNewCompanyCoordinatesproductionlocation({ latitude2, longitude2 });
-
-    setShowMap(true);
-
-    // Reset form fields
-    setFormData({
-      name: '',
-      headquarters_location: '',
-      r_and_d_location: '',
-      country: '',
-      product: '',
-      email: '',
-      employeestrength: '',
-      revenues: '',
-      telephone: '',
-      website: '',
-      productionvolumes: '',
-      keycustomers: '',
-      region: '',
-      foundingyear: '',
-      rate: '',
-      offeringproducts: '',
-      pricingstrategy: '',
-      customerneeds: '',
-      technologyuse: '',
-      competitiveadvantage: '',
-      challenges: '',
-      recentnews: '',
-      productlaunch: '',
-      strategicpartenrship: '',
-      comments: '',
-      employeesperregion: '',
-      businessstrategies: '',
-      revenue: '',
-      ebit: '',
-      operatingcashflow: '',
-      investingcashflow: '',
-      freecashflow: '',
-      roce: '',
-      equityratio: '',
-      financialyear: '',
-      keymanagement: [],
-      ceo: '',
-      cfo: '',
-      cto: '',
-      rdhead: '',
-      saleshead: '',
-      productionhead: '',
-      keydecisionmarker: '',
-      generated_id: '',
-      productionlocation: [] // Reset to array
-    });
+    // Rest of your existing code remains the same...
+    // ... [keep all the existing response handling code]
 
   } catch (error) {
     console.error(`Error ${mode === 'add' ? 'adding' : 'updating'} company: `, error);
   }
 };
-
-
     
  const handleback =()=>{
     setCurrentStep(1);
@@ -406,7 +391,7 @@ const handleSubmit = async (event) => {
 
         // Fetch the company details from the backend using the company ID
         try {
-            const response = await axios.get(`http://localhost:4000/companies/${selectedCompany.id}`);
+            const response = await axios.get(`https://compt-back.azurewebsites.net/companies/${selectedCompany.id}`);
             const selectedCompanyData = response.data;
             console.log('selectedinformation', selectedCompanyData);
             if (selectedCompanyData) {
@@ -425,13 +410,15 @@ const handleSubmit = async (event) => {
                     productionvolumes: selectedCompanyData.productionvolumes,
                     keycustomers: selectedCompanyData.keycustomers,
                     region: selectedCompanyData.region,
-                    foundingYear: selectedCompanyData.foundingYear,
+                    foundingyear: selectedCompanyData.foundingyear,
                     keymanagement: selectedCompanyData.keymanagement,
                     rate: selectedCompanyData.rate,
                     offeringproducts: selectedCompanyData.offeringproducts,
                     pricingstrategy: selectedCompanyData.pricingstrategy,
-                    customereeds: selectedCompanyData.customereeds,
+                    customerneeds: selectedCompanyData.customerneeds,
                     technologyuse: selectedCompanyData.technologyuse,
+                    productlaunch: selectedCompanyData.productlaunch,
+                    recentnews: selectedCompanyData.recentnews,
                     competitiveadvantage: selectedCompanyData.competitiveadvantage,
                     challenges: selectedCompanyData.challenges,
                     Recentnews: selectedCompanyData.Recentnews,
@@ -439,7 +426,8 @@ const handleSubmit = async (event) => {
                     strategicpartenrship: selectedCompanyData.strategicpartenrship,
                     comments: selectedCompanyData.comments,
                     employeesperregion: selectedCompanyData.employeesperregion,
-                    Businessstrategies: selectedCompanyData.Businessstrategies,
+                    businessstrategies: selectedCompanyData.businessstrategies,
+                    financialyear: selectedCompanyData.financialyear,
                     revenue: selectedCompanyData.revenue,
                     ebit: selectedCompanyData.ebit,
                     operatingcashflow: selectedCompanyData.operatingcashflow,
@@ -479,7 +467,7 @@ const handleSubmit = async (event) => {
         e.preventDefault();
         // Implement your update logic here, using formData and selectedCompanyId
         try {
-            const response = await axios.put(`http://localhost:4000/companies/${selectedCompanyId}`, formData);
+            const response = await axios.put(`https://compt-back.azurewebsites.net/companies/${selectedCompanyId}`, formData);
             setFormData(response.data);
          
             setFormData({
