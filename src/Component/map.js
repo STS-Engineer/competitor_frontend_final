@@ -511,7 +511,7 @@ const findClosestCompany = useCallback(async (selectedPlantname, selectedPlantCo
  
     const fetchCompanies = async () => {
         try {
-            const response = await axios.get('http://localhost:4000/companies/');
+            const response = await axios.get('https://compt-back.azurewebsites.net/companies/');
             setCompanies(response.data);
  
             // Extract company names from the fetched data
