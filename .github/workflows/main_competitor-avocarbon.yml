@@ -74,5 +74,5 @@ jobs:
         with:
           app-name: 'Competitor-avocarbon'
           slot-name: 'Production'
-          package: .
+          package: ./build 
           
