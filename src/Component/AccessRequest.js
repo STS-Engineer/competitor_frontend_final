@@ -28,7 +28,7 @@ const isValidEmail = (email) =>
     }
 
     try {
-      await axios.post('http://localhost:4000/companies/request-approval', {
+      await axios.post('https://compt-back.azurewebsites.net/companies/request-approval', {
         userEmail: email,
         type: 'access',
       });
@@ -46,7 +46,7 @@ const isValidEmail = (email) =>
     if (waiting) {
       interval = setInterval(async () => {
         try {
-          const res = await axios.get(`http://localhost:4000/companies/approval-status/${email}/access`);
+          const res = await axios.get(`https://compt-back.azurewebsites.net/companies/approval-status/${email}/access`);
           if (res.data.status === 'approved') {
             clearInterval(interval);
             setWaiting(false);
