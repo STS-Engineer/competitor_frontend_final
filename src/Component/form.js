@@ -487,6 +487,55 @@ const handleSubmit = async (event) => {
       `https://compt-back.azurewebsites.net/companies/${selectedCompanyId}`,
       updateData
     );
+
+    setFormData({
+            name: '',
+            headquarters_location: '',
+            r_and_d_location: '',
+            country: '',
+            product: '',
+            email: '',
+            employeestrength: '',
+            revenues: '',
+            telephone: '',
+            website: '',
+            productionvolumes: '',
+            keycustomers: '',
+            region: '',
+            foundingyear: '',
+            rate: '',
+            offeringproducts: '',
+            pricingstrategy: '',
+            customerneeds: '',
+            technologyuse: '',
+            competitiveadvantage: '',
+            challenges: '',
+            recentnews: '',
+            productlaunch: '',
+            strategicpartenrship: '',
+            comments: '',
+            employeesperregion: '',
+            businessstrategies: '',
+            revenue: '',
+            ebit: '',
+            operatingcashflow: '',
+            investingcashflow: '',
+            freecashflow: '',
+            roce: '',
+            equityratio: '',
+            financialyear: '',
+            keymanagement: [],
+            ceo: '',
+            cfo: '',
+            cto: '',
+            rdhead: '',
+            saleshead: '',
+            productionhead: '',
+            keydecisionmarker: '',
+            generated_id: '',
+            productionlocation: ''
+        });
+
     
     // Handle successful update
     setSuccessMessage('Company updated successfully!');
