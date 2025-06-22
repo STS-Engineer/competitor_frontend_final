@@ -317,6 +317,57 @@ const handleSubmit = async (event) => {
 
     if (mode === 'add') {
       response = await axios.post('https://compt-back.azurewebsites.net/companies', submitData);
+          setFormData({
+            name: '',
+            headquarters_location: '',
+            r_and_d_location: '',
+            country: '',
+            product: '',
+            email: '',
+            employeestrength: '',
+            revenues: '',
+            telephone: '',
+            website: '',
+            productionvolumes: '',
+            keycustomers: '',
+            region: '',
+            foundingyear: '',
+            rate: '',
+            offeringproducts: '',
+            pricingstrategy: '',
+            customerneeds: '',
+            technologyuse: '',
+            competitiveadvantage: '',
+            challenges: '',
+            recentnews: '',
+            productlaunch: '',
+            strategicpartenrship: '',
+            comments: '',
+            employeesperregion: '',
+            businessstrategies: '',
+            revenue: '',
+            ebit: '',
+            operatingcashflow: '',
+            investingcashflow: '',
+            freecashflow: '',
+            roce: '',
+            equityratio: '',
+            financialyear: '',
+            keymanagement: [],
+            ceo: '',
+            cfo: '',
+            cto: '',
+            rdhead: '',
+            saleshead: '',
+            productionhead: '',
+            keydecisionmarker: '',
+            generated_id: '',
+            productionlocation: ''
+        });
+
+    
+    // Handle successful update
+    setSuccessMessage('Competitor added successfully!');
     } else if (mode === 'edit') {
       response = await axios.put(`https://compt-back.azurewebsites.net/companies/${selectedCompanyId}`, submitData);
     }
@@ -538,7 +589,7 @@ const handleSubmit = async (event) => {
 
     
     // Handle successful update
-    setSuccessMessage('Company updated successfully!');
+    setSuccessMessage('Competitor updated successfully!');
     
   } catch (error) {
     console.error('Error updating company:', error);
