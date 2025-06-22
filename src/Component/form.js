@@ -123,6 +123,18 @@ useEffect(() => {
     }, [selectedProductionLocations]);
 
 
+   useEffect(() => {
+    if (mode === 'edit' && formData.productionlocation) {
+    const cleaned = formData.productionlocation
+      .split(';')
+      .map(loc => loc.trim())
+      .filter(Boolean);
+
+    setSelectedProductionLocations(cleaned);
+    }
+  }, [formData.productionlocation, mode]);
+
+
     const fetchCompanies = async () => {
         try {
             const response = await axios.get('https://compt-back.azurewebsites.net/companies/');
