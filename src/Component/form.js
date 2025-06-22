@@ -115,24 +115,17 @@ useEffect(() => {
 }, [selectedProductionLocations]);
 
 
-    useEffect(() => {
-    setFormData((prev) => ({
-    ...prev,
-    productionlocation: selectedProductionLocations.join(','),
-    }));
-    }, [selectedProductionLocations]);
-
-
-   useEffect(() => {
-    if (mode === 'edit' && formData.productionlocation) {
-    const cleaned = formData.productionlocation
-      .split(';')
-      .map(loc => loc.trim())
-      .filter(Boolean);
-
-    setSelectedProductionLocations(cleaned);
-    }
-  }, [formData.productionlocation, mode]);
+useEffect(() => {
+  if (mode === 'edit' && formData.productionlocation) {
+    // Clean and split the stored locations
+    const locations = formData.productionlocation
+      .split(';')       // Split by semicolon
+      .map(loc => loc.trim())  // Trim whitespace
+      .filter(loc => loc !== ''); // Remove empty strings
+    
+    setSelectedProductionLocations(locations);
+  }
+}, [formData.productionlocation, mode]);
 
 
     const fetchCompanies = async () => {
@@ -475,68 +468,34 @@ const handleSubmit = async (event) => {
         setMode('edit');
     };
 
-    const handleUpdate = async (e) => {
-        e.preventDefault();
-        // Implement your update logic here, using formData and selectedCompanyId
-        try {
-            const response = await axios.put(`https://compt-back.azurewebsites.net/companies/${selectedCompanyId}`, formData);
-            setFormData(response.data);
-         
-            setFormData({
-            name: '',
-            headquarters_location: '',
-            r_and_d_location: '',
-            country: '',
-            product: '',
-            email: '',
-            employeestrength: '',
-            revenues: '',
-            telephone: '',
-            website: '',
-            productionvolumes: '',
-            keycustomers: '',
-            region: '',
-            foundingyear: '',
-            rate: '',
-            offeringproducts: '',
-            pricingstrategy: '',
-            customerneeds: '',
-            technologyuse: '',
-            competitiveadvantage: '',
-            challenges: '',
-            recentnews: '',
-            productlaunch: '',
-            strategicpartenrship: '',
-            comments: '',
-            employeesperregion: '',
-            businessstrategies: '',
-            revenue: '',
-            ebit: '',
-            operatingcashflow: '',
-            investingcashflow: '',
-            freecashflow: '',
-            roce: '',
-            equityratio: '',
-            financialyear: '',
-            keymanagement: [],
-            ceo: '',
-            cfo: '',
-            cto: '',
-            rdhead: '',
-            saleshead: '',
-            productionhead: '',
-            keydecisionmarker: '',
-            generated_id: '',
-            productionlocation: ''
-        });
-
-            // Inside handleUpdate function, after successful update
-            setSelectedRdLocation(formData.r_and_d_location);
-
-        } catch (error) {
-            console.error('Error updating company: ', error);
-        }
+ const handleUpdate = async (e) => {
+  e.preventDefault();
+  
+  try {
+    // Format production locations correctly before submission
+    const formattedLocations = selectedProductionLocations
+      .map(loc => loc.trim())  // Clean each location
+      .filter(loc => loc !== '') // Remove empty
+      .join('; ');  // Join with semicolon+space
+    
+    const updateData = {
+      ...formData,
+      productionlocation: formattedLocations
     };
+
+    const response = await axios.put(
+      `https://compt-back.azurewebsites.net/companies/${selectedCompanyId}`,
+      updateData
+    );
+    
+    // Handle successful update
+    setSuccessMessage('Company updated successfully!');
+    
+  } catch (error) {
+    console.error('Error updating company:', error);
+    setSuccessMessage('Failed to update company');
+  }
+};
 
 
     // Function to open and close modal
