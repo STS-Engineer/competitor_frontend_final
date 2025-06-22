@@ -1660,33 +1660,55 @@ return (
             </div>
             </div>
 
- <div className="input-row">
+<div className="input-row">
   <div className="input-group">
     <label htmlFor="productionlocation" className="label">Production location:</label>
+
+    {/* Tags */}
+    <div className="selected-tags">
+      {selectedProductionLocations.map((location, index) => (
+        <span key={index} className="tag">
+          {location}
+          <button
+            type="button"
+            onClick={() => removeProductionLocation(index)}
+          >
+            ×
+          </button>
+        </span>
+      ))}
+    </div>
+
+    {/* Input field */}
     <input
-        type="text"
-        name="productionlocation"
-        placeholder="Enter production location"
-        value={formData.productionlocation}
-        onChange={(e) => {
-            setFormData({ ...formData, productionlocation: e.target.value });
-            fetchproductionLocationSuggestions(e.target.value);
-        }}
-        className="input"
+      type="text"
+      name="productionlocation"
+      placeholder="Enter production location"
+      value={productionLocationInput}
+      onChange={(e) => {
+        const value = e.target.value;
+        setProductionLocationInput(value);
+        fetchproductionLocationSuggestions(value);
+      }}
+      className="input"
     />
+
+    {/* Suggestions */}
     {loadingproductionLocationSuggestions && <div>Loading...</div>}
+
     {productionLocationSuggestions.length > 0 && (
-        <ul className="suggestions-dropdown">
-            {productionLocationSuggestions.map((suggestion, index) => (
-                <li key={index} onClick={() => handleporudtionsuggestionclick(suggestion)}>
-                    <span>{suggestion}</span>
-                    <span className="geolocation-icon">🌍</span>
-                </li>
-            ))}
-        </ul>
+      <ul className="suggestions-dropdown">
+        {productionLocationSuggestions.map((suggestion, index) => (
+          <li key={index} onClick={() => handleporudtionsuggestionclick(suggestion)}>
+            <span>{suggestion}</span>
+            <span className="geolocation-icon">🌍</span>
+          </li>
+        ))}
+      </ul>
     )}
+  </div>
 </div>
- </div>
+
         <div className="input-row">
         <div className="input-group">
                 <label htmlFor="revenues" className="label">Revenue</label>
