@@ -58,7 +58,7 @@ const Form = () => {
         productionhead: '',
         keydecisionmarker: '',
         generated_id: '',
-        productionlocation: [], 
+        productionlocation: ''
 
     });
     const [successMessage, setSuccessMessage] = useState('');
@@ -81,7 +81,7 @@ const Form = () => {
     const [currentstepupdate,setCurrentStepUpdate]= useState(1)
     const [selectedProductionLocations, setSelectedProductionLocations] = useState([]);
     const [productionLocationInput, setProductionLocationInput] = useState('');
- 
+    const [productionLocations, setProductionLocations] = useState([]);
 
 
   
@@ -107,26 +107,29 @@ const Form = () => {
         fetchCompanies();
     }, []);
 
-useEffect(() => {
-  setFormData((prev) => ({
-    ...prev,
-    productionlocation: selectedProductionLocations.join(','),
-  }));
-}, [selectedProductionLocations]);
 
-
-useEffect(() => {
-  if (mode === 'edit' && formData.productionlocation) {
-    // Clean and split the stored locations
-    const locations = formData.productionlocation
-      .split(';')       // Split by semicolon
-      .map(loc => loc.trim())  // Trim whitespace
-      .filter(loc => loc !== ''); // Remove empty strings
     
-    setSelectedProductionLocations(locations);
-  }
-}, [formData.productionlocation, mode]);
+useEffect(() => {
+  if (mode === 'edit' && selectedCompanyId) {
+    axios.get(`https://compt-back.azurewebsites.net/companies/${selectedCompanyId}`).then((res) => {
+      const data = res.data;
+      
+      // Parse existing locations (split by semicolon and clean)
+      const existingLocations = data.productionlocation
+        ? data.productionlocation
+            .split(';')
+            .map(loc => loc.trim().replace(/"/g, '')) // Remove quotes
+            .filter(loc => loc !== '')
+        : [];
 
+      setSelectedProductionLocations(existingLocations);
+      setFormData({
+        ...data,
+        productionlocation: data.productionlocation // Keep original string format
+      });
+    });
+  }
+}, [selectedCompanyId, mode]);
 
     const fetchCompanies = async () => {
         try {
@@ -238,22 +241,14 @@ useEffect(() => {
         }
     };
 
-
-const handleporudtionsuggestionclick = (suggestion) => {
-  const trimmed = suggestion.trim(); // e.g., "France, Paris"
-
-  // Avoid duplicate full place
-  const alreadyExists = selectedProductionLocations.some(
-    loc => loc.toLowerCase() === trimmed.toLowerCase()
-  );
-
-  if (!alreadyExists) {
-    setSelectedProductionLocations(prev => [...prev, trimmed]);
+const handleporudtionsuggestionclick = (location) => {
+  if (!selectedProductionLocations.includes(location)) {
+    setSelectedProductionLocations([...selectedProductionLocations, location]);
   }
-
   setProductionLocationInput('');
   setProductionLocationSuggestions([]);
 };
+
 
 
 const removeProductionLocation = (index) => {
@@ -269,114 +264,52 @@ const handleSubmit = async (event) => {
   event.preventDefault();
 
   try {
-    // Format production locations consistently
-    const formatProductionLocations = (locations) => {
-      if (!locations) return '';
-      
-      if (Array.isArray(locations)) {
-        // If it's already an array of "City, Country" pairs, just join with semicolon
-        return locations.join('; ');
-      }
-      
-      if (typeof locations === 'string') {
-        // If it's a string with comma-separated city/country pairs
-        // First split by semicolon if they exist
-        const pairs = locations.split(';').filter(Boolean);
-        
-        // If we got multiple pairs from semicolon splitting, trim and return joined
-        if (pairs.length > 1) {
-          return pairs.map(pair => pair.trim()).join('; ');
-        }
-        
-        // Otherwise try splitting by comma (but need to pair city with country)
-        const parts = locations.split(',').map(part => part.trim());
-        
-        // Combine every two parts into "City, Country" pairs
-        const formattedPairs = [];
-        for (let i = 0; i < parts.length; i += 2) {
-          if (parts[i + 1]) {
-            formattedPairs.push(`${parts[i]}, ${parts[i + 1]}`);
-          } else {
-            formattedPairs.push(parts[i]);
-          }
-        }
-        return formattedPairs.join('; ');
-      }
-      
-      return locations;
-    };
+    // Debug: Log the raw selected locations
+    console.log('Raw selected locations:', selectedProductionLocations);
+
+    // Format production locations with quotes and semicolons
+     const formattedLocations = selectedProductionLocations
+      .map(loc => `"${loc.trim()}"`)
+      .join('; ');
+
+    // Debug: Log the formatted locations
+    console.log('Formatted locations:', formattedLocations);
 
     const submitData = {
       ...formData,
-      productionlocation: formatProductionLocations(formData.productionlocation)
+      productionlocation: formattedLocations 
     };
 
-    console.log('Formatted production locations:', submitData.productionlocation); // Debug log
+    // Debug: Log the complete submit data
+    console.log('Full submit data:', JSON.stringify(submitData, null, 2));
 
     let response;
 
     if (mode === 'add') {
       response = await axios.post('https://compt-back.azurewebsites.net/companies', submitData);
-          setFormData({
-            name: '',
-            headquarters_location: '',
-            r_and_d_location: '',
-            country: '',
-            product: '',
-            email: '',
-            employeestrength: '',
-            revenues: '',
-            telephone: '',
-            website: '',
-            productionvolumes: '',
-            keycustomers: '',
-            region: '',
-            foundingyear: '',
-            rate: '',
-            offeringproducts: '',
-            pricingstrategy: '',
-            customerneeds: '',
-            technologyuse: '',
-            competitiveadvantage: '',
-            challenges: '',
-            recentnews: '',
-            productlaunch: '',
-            strategicpartenrship: '',
-            comments: '',
-            employeesperregion: '',
-            businessstrategies: '',
-            revenue: '',
-            ebit: '',
-            operatingcashflow: '',
-            investingcashflow: '',
-            freecashflow: '',
-            roce: '',
-            equityratio: '',
-            financialyear: '',
-            keymanagement: [],
-            ceo: '',
-            cfo: '',
-            cto: '',
-            rdhead: '',
-            saleshead: '',
-            productionhead: '',
-            keydecisionmarker: '',
-            generated_id: '',
-            productionlocation: ''
-        });
-
-    
-    // Handle successful update
-    setSuccessMessage('Competitor added successfully!');
+      setSuccessMessage('✅ Competitor added successfully!');
+      // Reset form fields
+      setFormData({
+        ...formData, // Keep other fields if needed
+        productionlocation: ''
+      });
+      setSelectedProductionLocations([]); // Clear the chips
     } else if (mode === 'edit') {
-      response = await axios.put(`https://compt-back.azurewebsites.net/companies/${selectedCompanyId}`, submitData);
+      response = await axios.put(
+        `https://compt-back.azurewebsites.net/companies/${selectedCompanyId}`, 
+        submitData
+      );
+      setSuccessMessage('✅ Competitor updated successfully!');
     }
 
-    // Rest of your existing code remains the same...
-    // ... [keep all the existing response handling code]
+    // Debug: Log the successful response
+    console.log('Server response:', response.data);
 
   } catch (error) {
-    console.error(`Error ${mode === 'add' ? 'adding' : 'updating'} company: `, error);
+    console.error(`Error ${mode === 'add' ? 'adding' : 'updating'} company:`, error);
+    if (error.response) {
+      console.error('Server responded with:', error.response.data);
+    }
   }
 };
     
@@ -387,7 +320,7 @@ const handleSubmit = async (event) => {
     setCurrentStepUpdate(1);
  }
 
-    const handleCancelEdit = () => {
+    const handleCancelEdit = () => { 
         setFormData({
              name: '',
     headquarters_location: '',
@@ -438,68 +371,33 @@ const handleSubmit = async (event) => {
         setSelectedCompanyId('');
         setMode('add');
     };
+const handleSelectChange = async (e) => {
+  const selectedName = e.target.value;
+  const selectedCompany = companies.find(company => company.name === selectedName);
+  setSelectedCompanyId(selectedCompany.id);
 
+  try {
+    const response = await axios.get(`https://compt-back.azurewebsites.net/companies/${selectedCompany.id}`);
+    const selectedCompanyData = response.data;
 
-    const handleSelectChange = async (e) => {
-        const selectedName = e.target.value;
-        const selectedCompany = companies.find(company => company.name === selectedName);
-        setSelectedCompanyId(selectedCompany.id);
+    // 🛠 Fix: Properly parse productionlocation into array of chips
+    const parsedProductionLocations = selectedCompanyData.productionlocation
+      ? selectedCompanyData.productionlocation.split(';').map(loc => loc.trim())
+      : [];
 
-        // Fetch the company details from the backend using the company ID
-        try {
-            const response = await axios.get(`https://compt-back.azurewebsites.net/companies/${selectedCompany.id}`);
-            const selectedCompanyData = response.data;
-            console.log('selectedinformation', selectedCompanyData);
-            if (selectedCompanyData) {
-                // Set the form data with the details of the selected company
-                setFormData({
-                    name: selectedCompanyData.name,
-                    headquarters_location: selectedCompanyData.headquarters_location,
-                    r_and_d_location: selectedCompanyData.r_and_d_location,
-                    country: selectedCompanyData.country,
-                    product: selectedCompanyData.product,
-                    email: selectedCompanyData.email,
-                    employeestrength: selectedCompanyData.employeestrength,
-                    revenues: selectedCompanyData.revenues,
-                    telephone: selectedCompanyData.telephone,
-                    website: selectedCompanyData.website,
-                    productionvolumes: selectedCompanyData.productionvolumes,
-                    keycustomers: selectedCompanyData.keycustomers,
-                    region: selectedCompanyData.region,
-                    foundingyear: selectedCompanyData.foundingyear,
-                    keymanagement: selectedCompanyData.keymanagement,
-                    rate: selectedCompanyData.rate,
-                    offeringproducts: selectedCompanyData.offeringproducts,
-                    pricingstrategy: selectedCompanyData.pricingstrategy,
-                    customerneeds: selectedCompanyData.customerneeds,
-                    technologyuse: selectedCompanyData.technologyuse,
-                    productlaunch: selectedCompanyData.productlaunch,
-                    recentnews: selectedCompanyData.recentnews,
-                    competitiveadvantage: selectedCompanyData.competitiveadvantage,
-                    challenges: selectedCompanyData.challenges,
-                    Recentnews: selectedCompanyData.Recentnews,
-                    Productlaunch: selectedCompanyData.Productlaunch,
-                    strategicpartenrship: selectedCompanyData.strategicpartenrship,
-                    comments: selectedCompanyData.comments,
-                    employeesperregion: selectedCompanyData.employeesperregion,
-                    businessstrategies: selectedCompanyData.businessstrategies,
-                    financialyear: selectedCompanyData.financialyear,
-                    revenue: selectedCompanyData.revenue,
-                    ebit: selectedCompanyData.ebit,
-                    operatingcashflow: selectedCompanyData.operatingcashflow,
-                    investingcashflow: selectedCompanyData.investingcashflow,
-                    freecashflow: selectedCompanyData.freecashflow,
-                    roce: selectedCompanyData.roce,
-                    equityratio: selectedCompanyData.equityratio,
-                    generated_id: formData.generated_id,
-                    productionlocation: selectedCompanyData.productionlocation,
-                    });
-                setSelectedRdLocation(selectedCompanyData.r_and_d_location); // Set the selected R&D location
-            }
-        } catch (error) {
-            console.error('Error fetching company details: ', error);
-        }
-    };
+    setSelectedProductionLocations(parsedProductionLocations); // ✅ chips appear correctly
+
+    setFormData({
+      ...selectedCompanyData,
+      productionlocation: selectedCompanyData.productionlocation,
+    });
+
+    setSelectedRdLocation(selectedCompanyData.r_and_d_location);
+  } catch (error) {
+    console.error('Error fetching company details: ', error);
+  }
+};
+
 
     
       const handleKeyManagementChange = (selectedOptions) => {
@@ -519,27 +417,14 @@ const handleSubmit = async (event) => {
         setMode('edit');
     };
 
- const handleUpdate = async (e) => {
-  e.preventDefault();
-  
-  try {
-    // Format production locations correctly before submission
-    const formattedLocations = selectedProductionLocations
-      .map(loc => loc.trim())  // Clean each location
-      .filter(loc => loc !== '') // Remove empty
-      .join('; ');  // Join with semicolon+space
-    
-    const updateData = {
-      ...formData,
-      productionlocation: formattedLocations
-    };
-
-    const response = await axios.put(
-      `https://compt-back.azurewebsites.net/companies/${selectedCompanyId}`,
-      updateData
-    );
-
-    setFormData({
+    const handleUpdate = async (e) => {
+        e.preventDefault();
+        // Implement your update logic here, using formData and selectedCompanyId
+        try {
+            const response = await axios.put(`https://compt-back.azurewebsites.net/companies/${selectedCompanyId}`, formData);
+            setFormData(response.data);
+         
+            setFormData({
             name: '',
             headquarters_location: '',
             r_and_d_location: '',
@@ -586,17 +471,20 @@ const handleSubmit = async (event) => {
             generated_id: '',
             productionlocation: ''
         });
+        setSuccessMessage('competitor updated successfuly');
+            // Inside handleUpdate function, after successful update
+            setSelectedRdLocation(formData.r_and_d_location);
 
-    
-    // Handle successful update
-    setSuccessMessage('Competitor updated successfully!');
-    
-  } catch (error) {
-    console.error('Error updating company:', error);
-    setSuccessMessage('Failed to update company');
-  }
+        } catch (error) {
+            console.error('Error updating company: ', error);
+        }
+    };
+
+const handleRemoveProductionLocation = (indexToRemove) => {
+  setSelectedProductionLocations(prev => 
+    prev.filter((_, idx) => idx !== indexToRemove)
+  );
 };
-
 
     // Function to open and close modal
     const handleShowFinancialDetails = () => setIsModalVisible(true);
@@ -1730,19 +1618,20 @@ return (
                 />
             </div>
             </div>
-
 <div className="input-row">
   <div className="input-group">
     <label htmlFor="productionlocation" className="label">Production location:</label>
-
-    {/* Tags */}
-    <div className="selected-tags">
-      {selectedProductionLocations.map((location, index) => (
-        <span key={index} className="tag">
-          {location}
-          <button
+    
+    {/* Display selected locations as chips */}
+    <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+      {selectedProductionLocations.map((loc, idx) => (
+        <span key={idx} className="chip">
+          "{loc}"
+          {idx < selectedProductionLocations.length - 1 ? ";" : ""}
+          <button 
             type="button"
-            onClick={() => removeProductionLocation(index)}
+            onClick={() => handleRemoveProductionLocation(idx)}
+            className="remove-chip-button"
           >
             ×
           </button>
@@ -1750,29 +1639,25 @@ return (
       ))}
     </div>
 
-    {/* Input field */}
+    {/* Location input */}
     <input
       type="text"
-      name="productionlocation"
-      placeholder="Enter production location"
       value={productionLocationInput}
       onChange={(e) => {
-        const value = e.target.value;
-        setProductionLocationInput(value);
-        fetchproductionLocationSuggestions(value);
+        setProductionLocationInput(e.target.value);
+        fetchproductionLocationSuggestions(e.target.value);
       }}
+      placeholder="Add locations (type and select from suggestions)"
       className="input"
     />
 
-    {/* Suggestions */}
+    {/* Suggestions dropdown */}
     {loadingproductionLocationSuggestions && <div>Loading...</div>}
-
     {productionLocationSuggestions.length > 0 && (
       <ul className="suggestions-dropdown">
         {productionLocationSuggestions.map((suggestion, index) => (
           <li key={index} onClick={() => handleporudtionsuggestionclick(suggestion)}>
-            <span>{suggestion}</span>
-            <span className="geolocation-icon">🌍</span>
+            {suggestion}
           </li>
         ))}
       </ul>
@@ -2211,7 +2096,7 @@ return (
             </div>
 
             <div className="button-beside">
-                         {selectedCompanyId && <button onClick={handleUpdate} className="button">Update</button>}
+                         {selectedCompanyId && <button className="button">Update</button>}
                         <button type="button" className="button" onClick={handlebackupdate}>Back</button>
                  
             </div>    
