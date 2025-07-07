@@ -1134,7 +1134,7 @@ const visibleCompanies = companies.filter(company => {
                  <select
                    value={filters.ProductionLocation}
                    onChange={handleproductfilterchange}
-                  style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none' }}
+                   style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none', width:'120px'}}
                    >
                   <option value="">All Production Locations</option>
                 {productionlocation.map((location, index) => (
