@@ -40,6 +40,7 @@ function Map() {
     });
     const [companies, setCompanies] = useState([]);
     const [companyNames, setCompanyNames] = useState([]);
+    const [countries, setCountries] = useState([]);
     const [product, setProduct] = useState([]);
     const [country, setCountry] = useState([]);
     const [Rdlocation, setRdlocation] = useState([]);
@@ -49,18 +50,23 @@ function Map() {
     const [showHeadquarterLocation, setShowHeadquarterLocation] = useState(true);
     const [showproductionLocation, setShowproductionLocation] = useState(true);
     const [isModalVisible, setIsModalVisible] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const navigate=useNavigate();
     const handlenavigate = ()=>{
         navigate("/stats")
     }
+
+    
  
     useEffect(() => {
         // Fetch companies when the component mounts
         fetchCompanies();
     }, []);
 
-    const showModal = useCallback((company) => {
+
+
+    const showModal = useCallback((company) => {   
       setSelectedCompany(company);
       setIsModalVisible(true);
     }, []);
@@ -202,64 +208,119 @@ function Map() {
 const addMarkersproductionForFilteredCompanies = useCallback(() => {
   if (!showproductionLocation) return;
 
-  companies.forEach(company => {
-    const { headquarters_location, product, name, country, productionlocation } = company;
+  // Clear existing markers first
+  markersRef.current.forEach(marker => marker.remove());
+  markersRef.current = [];
 
-    const companyName = (name || '').toLowerCase();
-    const filterName = (filters.companyName || '').toLowerCase();
-    const filterProduct = (filters.Product || '').toLowerCase();
-    const filterCountry = (filters.country || '').toLowerCase();
-    const filterHeadquartersLocation = (filters.HeadquartersLocation || '').toLowerCase();
-    const filterproductionLocation = (filters.ProductionLocation || '').toLowerCase();
+  // Case 1: A specific production location is selected (filtering mode)
+  if (filters.ProductionLocation) {
+    const locationCompetitors = companies.filter(company =>
+      company.productionLocations?.some(loc =>
+        loc.toLowerCase() === filters.ProductionLocation.toLowerCase()
+      )
+    );
 
-    if (
-      productionlocation &&
-      companyName.includes(filterName) &&
-      product.toLowerCase().includes(filterProduct) &&
-      country.toLowerCase().includes(filterCountry) &&
-      headquarters_location.toLowerCase().includes(filterHeadquartersLocation) &&
-      productionlocation.toLowerCase().includes(filterproductionLocation)
-    ) {
-      // 👇 Split production locations by semicolon
-      const locations = productionlocation.split(';').map(loc => loc.trim()).filter(Boolean);
+    if (locationCompetitors.length === 0) {
+      Swal.fire({
+        title: 'No Competitors Found',
+        text: `No companies found with production location: ${filters.ProductionLocation}`,
+        icon: 'info',
+        timer: 2000
+      });
+      return;
+    }
 
-      locations.forEach(location => {
-        axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(location)}.json?access_token=pk.eyJ1IjoibW9vdGV6ZmFyd2EiLCJhIjoiY2x1Z3BoaTFqMW9hdjJpcGdibnN1djB5cyJ9.It7emRJnE-Ee59ysZKBOJw`)
+    // Geocode the selected location
+    axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(filters.ProductionLocation)}.json?access_token=${mapboxgl.accessToken}`)
+      .then(response => {
+        if (!response.data.features?.length) return;
+
+        const locationCoords = response.data.features[0].geometry.coordinates;
+
+        locationCompetitors.forEach((company, index) => {
+          const offset = index % 2 === 0 ? 0.01 : -0.01;
+          const markerCoords = [
+            locationCoords[0] + offset,
+            locationCoords[1] + offset
+          ];
+
+          const marker = new mapboxgl.Marker({
+            color: '#FF5733',
+            scale: 0.9
+          })
+            .setLngLat(markerCoords)
+            .setPopup(new mapboxgl.Popup().setHTML(`
+              <div>
+                <h3>${company.name}</h3>
+                <p>Production: ${filters.ProductionLocation}</p>
+                <p>Country: ${company.country}</p>
+                <p>Product: ${company.product}</p>
+                ${company.headquarters_location ? `<p>HQ: ${company.headquarters_location}</p>` : ''}
+              </div>
+            `))
+            .addTo(map.current);
+
+          markersRef.current.push(marker);
+        });
+
+        // Zoom to location
+        map.current.flyTo({
+          center: locationCoords,
+          zoom: 10,
+          padding: { top: 100, bottom: 100, left: 100, right: 100 }
+        });
+
+        // Show count popup
+        new mapboxgl.Popup()
+          .setLngLat(locationCoords)
+          .setHTML(`<strong>${filters.ProductionLocation}</strong><br>${locationCompetitors.length} competitors`)
+          .addTo(map.current);
+      })
+      .catch(error => {
+        console.error('Error geocoding location:', error);
+        Swal.fire({
+          title: 'Location Error',
+          text: `Could not find coordinates for ${filters.ProductionLocation}`,
+          icon: 'error'
+        });
+      });
+
+  } else {
+    // Case 2: No filter selected → show all production locations
+    companies.forEach(company => {
+      company.productionLocations?.forEach(location => {
+        axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(location)}.json?access_token=${mapboxgl.accessToken}`)
           .then(response => {
-            if (response.data.features && response.data.features.length > 0) {
-              const coordinates = response.data.features[0].geometry.coordinates;
+            if (!response.data.features?.length) return;
 
-              if (filters.region) {
-                const boundaries = regionBoundaries[filters.region];
-                if (boundaries) {
-                  const [lng, lat] = coordinates;
-                  if (
-                    lat < boundaries.minLat || lat > boundaries.maxLat ||
-                    lng < boundaries.minLng || lng > boundaries.maxLng
-                  ) {
-                    return; // Skip if outside region
-                  }
-                }
-              }
+            const coordinates = response.data.features[0].geometry.coordinates;
 
-              const marker = new mapboxgl.Marker({ scale: 0.7 })
-                .setLngLat(coordinates)
-                .addTo(map.current);
+            const marker = new mapboxgl.Marker({
+              color: '#FF5733',
+              scale: 0.7
+            })
+              .setLngLat(coordinates)
+              .setPopup(new mapboxgl.Popup().setHTML(`
+                <div>
+                  <h3>${company.name}</h3>
+                  <p>Production: ${location}</p>
+                  <p>Country: ${company.country}</p>
+                  <p>Product: ${company.product}</p>
+                </div>
+              `))
+              .addTo(map.current);
 
-              const el = marker.getElement();
-              el.addEventListener('click', (e) => {
-                e.stopPropagation();
-                showModal(company);
-              });
-            }
+            markersRef.current.push(marker);
           })
           .catch(error => {
-            console.error('Error fetching production location:', error);
+            console.error('Error geocoding production location:', error);
           });
       });
-    }
-  });
-}, [companies, filters, map, regionBoundaries, showModal, showproductionLocation]);
+    });
+  }
+}, [companies, filters.ProductionLocation, map, showproductionLocation]);
+
+
 
 
 
@@ -333,9 +394,7 @@ useEffect(() => {
                                 bounds.extend(coordinates);
                             }
 
-                            if (!bounds.isEmpty()) {
-                                map.current.fitBounds(bounds, { padding: 80, maxZoom: 14 });
-                            }
+                          
                         })
                         .catch(error => console.error('Error fetching location:', error));
                 }
@@ -470,7 +529,7 @@ const findClosestCompany = useCallback(async (selectedPlantname, selectedPlantCo
             addMarkersproductionForFilteredCompanies();
             addAvoPlantMarkers();
         }
-    }, [companies, filters,showRdLocation, showHeadquarterLocation,addAvoPlantMarkers, addMarkersForFilteredCompanies, addMarkersheadquarterForFilteredCompanies, addMarkersproductionForFilteredCompanies]);
+    }, [companies, filters,showRdLocation, showHeadquarterLocation,showproductionLocation, addAvoPlantMarkers, addMarkersForFilteredCompanies, addMarkersheadquarterForFilteredCompanies, addMarkersproductionForFilteredCompanies]);
  
 
     const addAvoPlantPopup = useCallback(() => {
@@ -508,39 +567,71 @@ const findClosestCompany = useCallback(async (selectedPlantname, selectedPlantCo
     }, [addAvoPlantPopup, filters.avoPlant]);
    
  
- 
-    const fetchCompanies = async () => {
-        try {
-            const response = await axios.get('https://compt-back.azurewebsites.net/companies/');
-            setCompanies(response.data);
- 
-            // Extract company names from the fetched data
-            const uniqueNames = Array.from(new Set(response.data.map(company => company.name)));
-            setCompanyNames(uniqueNames);
-            // Extract product from the fetched data
-            const products = Array.from(new Set(response.data.map(company => company.product)));
-            setProduct(products);
- 
-            // Extract country from the fetched data
-            const country = Array.from(new Set(response.data.map(company => company.country)));
-            setCountry(country);
- 
-            // Extract rdlocation from the fetched data
-            const rdlocation = response.data.map(company => company.r_and_d_location);
-            setRdlocation(rdlocation);
- 
-            // Extract headquarter from the fetched data
-            const Headquarterlocation = response.data.map(company => company.headquarters_location);
-            setHeadquarterlocation(Headquarterlocation);
-                   
-            const productionlocation = response.data.map(company => company.productionlocation);
-            setProductionlocation(productionlocation);
- 
-         
-        } catch (error) {
-            console.error('Error fetching companies: ', error);
-        }
-    };
+const fetchCompanies = async () => {
+  try {
+    const response = await axios.get('https://compt-back.azurewebsites.net/companies/');
+
+    const processedData = response.data.map(company => {
+      const productionLocations = company.productionlocation 
+        ? company.productionlocation.split(';').map(loc => loc.trim()).filter(Boolean)
+        : [];
+
+      return {
+        ...company,
+        productionLocations
+      };
+    });
+
+    setCompanies(processedData);
+
+    // Extract unique filter values for dropdowns
+    const allProductionLocations = processedData
+      .flatMap(company => company.productionLocations)
+      .filter((loc, index, self) => loc && self.indexOf(loc) === index)
+      .sort();
+
+    const allRDLocations = processedData
+      .map(company => company.r_and_d_location?.trim())
+      .filter((loc, index, self) => loc && self.indexOf(loc) === index)
+      .sort();
+
+    const allHeadquarters = processedData
+      .map(company => company.headquarters_location?.trim())
+      .filter((loc, index, self) => loc && self.indexOf(loc) === index)
+      .sort();
+
+    const allProducts = processedData
+      .map(company => company.product?.trim())
+      .filter((prod, index, self) => prod && self.indexOf(prod) === index)
+      .sort();
+
+      const allCompanyNames = processedData
+      .map(company => company.name?.trim())
+      .filter((name, index, self) => name && self.indexOf(name) === index)
+      .sort();
+
+    const allCountries = processedData
+      .map(company => company.country?.trim())
+      .filter((country, index, self) => country && self.indexOf(country) === index)
+      .sort();
+
+
+    // Set them to state
+    setProductionlocation(allProductionLocations);
+    setRdlocation(allRDLocations); // You need to define this in useState
+    setHeadquarterlocation(allHeadquarters); // useState for this too
+    setProduct(allProducts); // useState for this too
+    setCompanyNames(allCompanyNames);      // <-- ADD THIS
+    setCountries(allCountries);            // <-- AND THIS
+
+
+  } catch (error) {
+    console.error('Error fetching companies:', error);
+    Swal.fire('Error', 'Failed to load company data', 'error');
+  }
+};
+
+
 
       const productImages = {
         choke: "https://www.split-corecurrenttransformer.com/photo/pl26101407-ferrite_rod_core_high_frequency_choke_coil_inductor_air_coils_with_flat_wire.jpg",
@@ -636,10 +727,25 @@ const handleRegionChange = (event) => {
         setFilters({ ...filters, HeadquartersLocation: selectedheadquarter })
     }
 
-    const handleproductfilterchange = (event) => {
-        const selectedproduction = event.target.value;
-        setFilters({ ...filters, productionlocation: selectedproduction })
-    }
+const handleproductfilterchange = (event) => {
+  const selectedproduction = event.target.value;
+  setFilters(prev => ({
+    ...prev, 
+    ProductionLocation: selectedproduction,
+    RDLocation: '',
+    HeadquartersLocation: ''
+  }));
+
+  // Clear existing markers
+  markersRef.current.forEach(marker => marker.remove());
+  markersRef.current = [];
+
+  if (selectedproduction) {
+    // Trigger the marker display function
+    addMarkersproductionForFilteredCompanies();
+  }
+};
+
  const handleRdLocationCheckbox = (e) => {
     setShowRdLocation(e.target.checked); // Toggle R&D checkbox
 };
@@ -648,8 +754,12 @@ const handleHeadquarterLocationCheckbox = (e) => {
     setShowHeadquarterLocation(e.target.checked); // Toggle Headquarters checkbox
 };
 const handleproductionLocationCheckbox = (e) => {
-    setShowproductionLocation(e.target.checked); // Toggle Headquarters checkbox
+  setShowproductionLocation(e.target.checked);
+  
+
 };
+
+
 
 // Modified handleDownloadPDF function
 // In your Map component
@@ -993,7 +1103,7 @@ const visibleCompanies = companies.filter(company => {
                         style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none' }}
                     >
                         <option value="">Country</option>
-                        {country.map((name, index) => (
+                        {countries.map((name, index) => (
                             <option key={index} value={name}>{name}</option>
                         ))}
                     </select>
@@ -1020,17 +1130,21 @@ const visibleCompanies = companies.filter(company => {
                         ))}
                     </select>
 
-                    
-                    <select
-                        value={filters.ProductionLocation}
-                        onChange={handleproductfilterchange}
-                        style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none', width:'120px'}}
-                    >
-                        <option value="">Production Location</option>
-                        {productionlocation.map((name, index) => (
-                            <option key={index} value={name}>{name}</option>
-                        ))}
-                    </select>
+                     
+                 <select
+                   value={filters.ProductionLocation}
+                   onChange={handleproductfilterchange}
+                  style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none' }}
+                   >
+                  <option value="">All Production Locations</option>
+                {productionlocation.map((location, index) => (
+                   <option key={index} value={location}>
+                  {location} ({companies.filter(c => 
+                         c.productionLocations.includes(location)
+                       ).length}) {/* Show count */}
+                   </option>
+                  ))}
+                      </select>
 
                   <select
                  value={filters.region}
