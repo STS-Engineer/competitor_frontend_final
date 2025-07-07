@@ -572,9 +572,12 @@ const fetchCompanies = async () => {
     const response = await axios.get('https://compt-back.azurewebsites.net/companies/');
 
     const processedData = response.data.map(company => {
-      const productionLocations = company.productionlocation 
-        ? company.productionlocation.split(';').map(loc => loc.trim()).filter(Boolean)
-        : [];
+     const productionLocations = company.productionlocation 
+    ? company.productionlocation
+        .split(';')
+        .map(loc => loc.trim().replace(/^"|"$/g, '')) // ✅ Removes leading/trailing quotes
+        .filter(Boolean)
+    : [];
 
       return {
         ...company,
@@ -1139,9 +1142,7 @@ const visibleCompanies = companies.filter(company => {
                   <option value="">All Production Locations</option>
                 {productionlocation.map((location, index) => (
                    <option key={index} value={location}>
-                  {location} ({companies.filter(c => 
-                         c.productionLocations.includes(location)
-                       ).length}) {/* Show count */}
+                  {location} {/* Show count */}
                    </option>
                   ))}
                       </select>
