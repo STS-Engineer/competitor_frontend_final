@@ -236,6 +236,26 @@ const addMarkersproductionForFilteredCompanies = useCallback(() => {
         if (!response.data.features?.length) return;
 
         const locationCoords = response.data.features[0].geometry.coordinates;
+        const [lng, lat] = locationCoords;
+
+        // Region filter check
+        if (filters.region) {
+          const boundaries = regionBoundaries[filters.region];
+          if (boundaries) {
+            if (
+              lat < boundaries.minLat || lat > boundaries.maxLat ||
+              lng < boundaries.minLng || lng > boundaries.maxLng
+            ) {
+              Swal.fire({
+                title: 'Outside Region',
+                text: `The selected production location is not in the selected region.`,
+                icon: 'info',
+                timer: 2000
+              });
+              return;
+            }
+          }
+        }
 
         locationCompetitors.forEach((company, index) => {
           const offset = index % 2 === 0 ? 0.01 : -0.01;
@@ -294,6 +314,20 @@ const addMarkersproductionForFilteredCompanies = useCallback(() => {
             if (!response.data.features?.length) return;
 
             const coordinates = response.data.features[0].geometry.coordinates;
+            const [lng, lat] = coordinates;
+
+            // Region filter check
+            if (filters.region) {
+              const boundaries = regionBoundaries[filters.region];
+              if (boundaries) {
+                if (
+                  lat < boundaries.minLat || lat > boundaries.maxLat ||
+                  lng < boundaries.minLng || lng > boundaries.maxLng
+                ) {
+                  return; // Skip if outside region
+                }
+              }
+            }
 
             const marker = new mapboxgl.Marker({
               color: '#FF5733',
@@ -318,13 +352,10 @@ const addMarkersproductionForFilteredCompanies = useCallback(() => {
       });
     });
   }
-}, [companies, filters.ProductionLocation, map, showproductionLocation]);
+}, [companies, filters.ProductionLocation, filters.region, map, showproductionLocation, regionBoundaries]);
 
 
-
-
-
-     const markersRef = useRef([]);
+ const markersRef = useRef([]);
 useEffect(() => {
     if (map.current) {
         const bounds = new mapboxgl.LngLatBounds();
