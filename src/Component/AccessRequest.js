@@ -32,7 +32,7 @@ const isValidEmail = (email) =>
         userEmail: email,
         type: 'access',
       });
-
+      localStorage.setItem('email', email);
       setWaiting(true);
     } catch (err) {
       console.error('Error requesting approval:', err);
