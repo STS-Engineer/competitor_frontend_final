@@ -277,6 +277,7 @@ const handleSubmit = async (event) => {
 
     const submitData = {
       ...formData,
+      emailrequester:localStorage.getItem('email'),
       productionlocation: formattedLocations 
     };
 
