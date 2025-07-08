@@ -287,7 +287,7 @@ const handleSubmit = async (event) => {
 
     if (mode === 'add') {
       response = await axios.post('https://compt-back.azurewebsites.net/companies', submitData);
-      setSuccessMessage('✅ Competitor added successfully!');
+      setSuccessMessage('⏳Your request has been sent, waiting for admin approval');
       // Reset form fields
       setFormData({
         ...formData, // Keep other fields if needed
@@ -299,7 +299,7 @@ const handleSubmit = async (event) => {
         `https://compt-back.azurewebsites.net/companies/${selectedCompanyId}`, 
         submitData
       );
-      setSuccessMessage('✅ Competitor updated successfully!');
+      setSuccessMessage('⏳Your request has been sent, waiting for admin approval');
     }
 
     // Debug: Log the successful response
