@@ -50,20 +50,124 @@ function Map() {
     const [showHeadquarterLocation, setShowHeadquarterLocation] = useState(true);
     const [showproductionLocation, setShowproductionLocation] = useState(true);
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const navigate=useNavigate();
-    const handlenavigate = ()=>{
-        navigate("/stats")
-    }
+    const rdMarkersRef = useRef([]);      // For R&D locations
+    const hqMarkersRef = useRef([]);      // For Headquarters
+    const productionMarkersRef = useRef([]); // For Production locations
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     
  
-    useEffect(() => {
-        // Fetch companies when the component mounts
-        fetchCompanies();
-    }, []);
+useEffect(() => {
+  // Fetch data when component mounts
+  fetchCompanies();
 
+  // Initialize map
+  if (!map.current) {
+    map.current = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: [0, 0],
+      zoom: 1,
+      preserveDrawingBuffer: true
+    });
+
+    map.current.on('load', () => {
+      setIsInitialLoad(true); // Set flag for initial load
+    });
+  }
+
+  return () => {
+    // Clean up map on unmount
+    if (map.current) {
+      map.current.remove();
+      map.current = null;
+    }
+  };
+}, []);
+
+
+     const addAvoPlantMarkers = useCallback(() => {
+  avoPlants.forEach(plant => {
+    if (filters.avoPlant === '' || plant.name.toLowerCase() === (filters.avoPlant || '').toLowerCase()) {
+      new mapboxgl.Marker({ color: 'red', scale: 0.7 })
+        .setLngLat(plant.coordinates)
+        .setPopup(new mapboxgl.Popup().setHTML(`<h3>${plant.name}</h3>`))
+        .addTo(map.current);
+    }
+  });
+}, [filters.avoPlant, map]); 
+const addAllMarkers = useCallback(() => {
+  clearAllMarkers();
+  
+  if (showRdLocation) {
+    companies.forEach(company => {
+      if (company.r_and_d_location) {
+        addMarker(company, company.r_and_d_location, '#0066CC', 'R&D Location');
+      }
+    });
+  }
+  
+  if (showHeadquarterLocation) {
+    companies.forEach(company => {
+      if (company.headquarters_location) {
+        addMarker(company, company.headquarters_location, '#00CC66', 'Headquarters');
+      }
+    });
+  }
+  
+  if (showproductionLocation) {
+    companies.forEach(company => {
+      if (company.productionLocations?.length > 0) {
+        company.productionLocations.forEach(location => {
+          addMarker(company, location, '#FF5733', 'Production Location');
+        });
+      }
+    });
+  }
+  
+  addAvoPlantMarkers();
+}, [companies, showRdLocation, showHeadquarterLocation, showproductionLocation]);
+
+// Helper function to add a single marker
+const addMarker = (company, location, color, locationType) => {
+  axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(location)}.json?access_token=${mapboxgl.accessToken}`)
+    .then(response => {
+      if (response.data.features?.length > 0) {
+        const coordinates = response.data.features[0].geometry.coordinates;
+        
+        const marker = new mapboxgl.Marker({ color, scale: 0.7 })
+          .setLngLat(coordinates)
+          .setPopup(new mapboxgl.Popup({ offset: 10 }).setHTML(`
+            <div style="font-family: Arial, sans-serif; padding: 8px;">
+              <h3 style="margin: 5px 0; font-size: 16px; color: ${color};">${company.name}</h3>
+              <p style="margin: 2px 0; font-size: 14px;"><strong>${locationType}:</strong> ${location}</p>
+              <p style="margin: 2px 0; font-size: 14px;"><strong>Product:</strong> ${company.product || 'N/A'}</p>
+              <p style="margin: 2px 0; font-size: 14px;"><strong>Country:</strong> ${company.country || 'N/A'}</p>
+            </div>
+          `))
+          .addTo(map.current);
+
+        // Store marker reference based on type
+        if (locationType === 'R&D Location') {
+          rdMarkersRef.current.push(marker);
+        } else if (locationType === 'Headquarters') {
+          hqMarkersRef.current.push(marker);
+        } else {
+          productionMarkersRef.current.push(marker);
+        }
+
+        // Add click event for modal
+        marker.getElement().addEventListener('click', (e) => {
+          e.stopPropagation();
+          showModal(company);
+        });
+      }
+    })
+    .catch(error => {
+      console.error(`Error fetching ${locationType} coordinates:`, error);
+    });
+};
 
 
     const showModal = useCallback((company) => {   
@@ -79,130 +183,245 @@ function Map() {
       South_Asia: { minLat: 5, maxLat: 35, minLng: 65, maxLng: 106 },
       NAFTA: { minLat: 10, maxLat: 72, minLng: -168, maxLng: -34 },
     }), []);
-    const addMarkersForFilteredCompanies = useCallback(() => {
-      if (!showRdLocation) return;
-    
-      companies.forEach(company => {
-        const { r_and_d_location, product, name, country, headquarters_location, productionlocation } = company;
-    
-        const companyName = (name || '').toLowerCase();
-        const filterName = (filters.companyName || '').toLowerCase();
-       const filterProduct = (filters.Product || '').toLowerCase();
-        const filterCountry = (filters.country || '').toLowerCase();
-        const filterRdLocation = (filters.RDLocation || '').toLowerCase();
-        const filterHeadquartersLocation = (filters.HeadquartersLocation || '').toLowerCase();
-        const filterproductionLocation = (filters.ProductionLocation || '').toLowerCase();
+   
 
+const addMarkersForFilteredCompanies = useCallback(() => {
+  // Clear existing R&D markers first
+  rdMarkersRef.current.forEach(marker => marker.remove());
+  rdMarkersRef.current = [];
+
+  // Skip if R&D locations are hidden
+  if (!showRdLocation) return;
+
+  // Normalize filter values
+  const filterName = (filters.companyName || '').toLowerCase().trim();
+  const filterProduct = (filters.Product || '').toLowerCase().trim();
+  const filterCountry = (filters.country || '').toLowerCase().trim();
+  const filterRdLocation = (filters.RDLocation || '').toLowerCase().trim();
+  const filterHQ = (filters.HeadquartersLocation || '').toLowerCase().trim();
+  const filterProduction = (filters.ProductionLocation || '').toLowerCase().trim();
+  const filterRegion = filters.region;
+
+  // Filter companies based on all active criteria
+  const filteredCompanies = companies.filter(company => {
+    const {
+      r_and_d_location,
+      product,
+      name,
+      country,
+      headquarters_location,
+      productionlocation,
+      region
+    } = company;
+
+    // Skip if no R&D location
+    if (!r_and_d_location) return false;
+
+    // Normalize company data
+    const companyName = (name || '').toLowerCase().trim();
+    const prod = (product || '').toLowerCase().trim();
+    const cnt = (country || '').toLowerCase().trim();
+    const rdLoc = (r_and_d_location || '').toLowerCase().trim();
+    const hqLoc = (headquarters_location || '').toLowerCase().trim();
+    const prodLoc = (productionlocation || '').toLowerCase().trim();
+    const compRegion = (region || '').toLowerCase().trim();
+
+    // Apply all filters
+    const nameMatch = !filterName || companyName.includes(filterName);
+    const productMatch = !filterProduct || prod.includes(filterProduct);
+    const countryMatch = !filterCountry || cnt.includes(filterCountry);
+    const rdLocationMatch = !filterRdLocation || rdLoc.includes(filterRdLocation);
+    const hqMatch = !filterHQ || hqLoc.includes(filterHQ);
+    const prodMatch = !filterProduction || prodLoc.includes(filterProduction);
+    const regionMatch = !filterRegion || compRegion.includes(filterRegion.toLowerCase());
+
+    return nameMatch && productMatch && countryMatch && rdLocationMatch && hqMatch && prodMatch && regionMatch;
+  });
+
+  // Geocode and add markers for filtered companies
+  const geocodePromises = filteredCompanies.map(company => {
+    const { r_and_d_location } = company;
     
-        if (
-          r_and_d_location &&
-          companyName.includes(filterName) &&
-          product.toLowerCase().includes(filterProduct) &&
-          country.toLowerCase().includes(filterCountry) &&
-          r_and_d_location.toLowerCase().includes(filterRdLocation) &&
-          headquarters_location.toLowerCase().includes(filterHeadquartersLocation) &&
-          productionlocation.toLowerCase().includes(filterproductionLocation) 
-        ) {
-          axios
-            .get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(r_and_d_location)}.json?access_token=pk.eyJ1IjoibW9vdGV6ZmFyd2EiLCJhIjoiY2x1Z3BoaTFqMW9hdjJpcGdibnN1djB5cyJ9.It7emRJnE-Ee59ysZKBOJw`)
-            .then(response => {
-              if (response.data.features && response.data.features.length > 0) {
-                const coordinates = response.data.features[0].geometry.coordinates;
-                if (filters.region) {
-                  const boundaries = regionBoundaries[filters.region];
-                  if (boundaries) {
-                    const [lng, lat] = coordinates;
-                    if (
-                      lat < boundaries.minLat || lat > boundaries.maxLat ||
-                      lng < boundaries.minLng || lng > boundaries.maxLng
-                    ) {
-                      return; // Skip this marker if outside region
-                    }
-                  }
-                }
-    
-              
-    
-                const marker = new mapboxgl.Marker({
-                  scale: 0.7
-                })
-                  .setLngLat(coordinates)
-                  .addTo(map.current);
-    
-                const el = marker.getElement();
-                el.addEventListener('click', (e) => {
-                  e.stopPropagation();
-                  showModal(company);
-                });
-              }
-            })
-            .catch(error => {
-              console.error('Error fetching company location: ', error);
-            });
+    return axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(r_and_d_location)}.json`, {
+      params: {
+        access_token: mapboxgl.accessToken,
+        limit: 1
+      }
+    })
+    .then(response => {
+      if (response.data.features?.length > 0) {
+        const coordinates = response.data.features[0].geometry.coordinates;
+
+        // Apply region boundary filter if selected
+        if (filterRegion && regionBoundaries[filterRegion]) {
+          const boundaries = regionBoundaries[filterRegion];
+          const [lng, lat] = coordinates;
+          if (
+            lat < boundaries.minLat || lat > boundaries.maxLat ||
+            lng < boundaries.minLng || lng > boundaries.maxLng
+          ) {
+            return null; // Skip if outside region
+          }
         }
+
+        // Create and return marker config
+        return {
+          company,
+          coordinates,
+          color: '#0066CC',
+          locationType: 'R&D Location'
+        };
+      }
+      return null;
+    })
+    .catch(error => {
+      console.error('Error geocoding R&D location:', error);
+      return null;
+    });
+  });
+
+  // Process all geocoding results
+  Promise.all(geocodePromises).then(results => {
+    results.forEach(result => {
+      if (!result) return;
+
+      const { company, coordinates, color, locationType } = result;
+      
+      // Create marker
+      const marker = new mapboxgl.Marker({ 
+        color,
+        scale: 0.7 
+      })
+        .setLngLat(coordinates)
+        .setPopup(new mapboxgl.Popup({ offset: 10 }).setHTML(`
+          <div style="font-family: Arial, sans-serif; padding: 8px;">
+            <h3 style="margin: 5px 0; font-size: 16px; color: ${color};">${company.name}</h3>
+            <p style="margin: 2px 0; font-size: 14px;"><strong>${locationType}:</strong> ${company.r_and_d_location}</p>
+            <p style="margin: 2px 0; font-size: 14px;"><strong>Product:</strong> ${company.product || 'N/A'}</p>
+            <p style="margin: 2px 0; font-size: 14px;"><strong>Country:</strong> ${company.country || 'N/A'}</p>
+          </div>
+        `))
+        .addTo(map.current);
+
+      // Store marker reference
+      rdMarkersRef.current.push(marker);
+
+      // Add click event
+      marker.getElement().addEventListener('click', (e) => {
+        e.stopPropagation();
+        showModal(company);
       });
-    }, [companies, filters, map, regionBoundaries, showModal, showRdLocation]);
+    });
+
+    // Log filtered count if debugging
+    if (process.env.NODE_ENV === 'development' && filterRdLocation) {
+      console.log(`Showing ${filteredCompanies.length} R&D locations matching filters`);
+    }
+  });
+}, [companies, filters, map, regionBoundaries, showModal, showRdLocation]);
+
+
  
-    const addMarkersheadquarterForFilteredCompanies = useCallback(() => {
-      if (!showHeadquarterLocation) return;
-    
-      companies.forEach(company => {
-        const { headquarters_location, product, name, country, productionlocation } = company;
-    
-      const companyName = (name || '').toLowerCase();
-     const filterName = (filters.companyName || '').toLowerCase();
-     const filterProduct = (filters.Product || '').toLowerCase();
-     const filterCountry = (filters.country || '').toLowerCase();
-    const filterHeadquartersLocation = (filters.HeadquartersLocation || '').toLowerCase();
-    const filterproductionLocation = (filters.ProductionLocation || '').toLowerCase();
+const addMarkersheadquarterForFilteredCompanies = useCallback(() => {
+  // Clear existing HQ markers first
+  hqMarkersRef.current.forEach(marker => marker.remove());
+  hqMarkersRef.current = [];
 
-        
+  // Skip if HQ checkbox is unchecked
+  if (!showHeadquarterLocation) return;
+
+  // Get filter values (normalized)
+  const filterName = (filters.companyName || '').toLowerCase().trim();
+  const filterProduct = (filters.Product || '').toLowerCase().trim();
+  const filterCountry = (filters.country || '').toLowerCase().trim();
+  const filterHQ = (filters.HeadquartersLocation || '').toLowerCase().trim();
+  const filterProduction = (filters.ProductionLocation || '').toLowerCase().trim();
+
+  // Filter companies based on all criteria
+  const filteredCompanies = companies.filter(company => {
+    const {
+      headquarters_location,
+      product,
+      name,
+      country,
+      productionlocation
+    } = company;
+
+    // Skip if no HQ location
+    if (!headquarters_location) return false;
+
+    // Normalize company data
+    const companyName = (name || '').toLowerCase().trim();
+    const prod = (product || '').toLowerCase().trim();
+    const cnt = (country || '').toLowerCase().trim();
+    const hqLoc = (headquarters_location || '').toLowerCase().trim();
+    const prodLoc = (productionlocation || '').toLowerCase().trim();
+
+    // Apply all filters
+    const nameMatch = !filterName || companyName.includes(filterName);
+    const productMatch = !filterProduct || prod.includes(filterProduct);
+    const countryMatch = !filterCountry || cnt.includes(filterCountry);
+    const hqMatch = !filterHQ || hqLoc.includes(filterHQ);
+    const prodMatch = !filterProduction || prodLoc.includes(filterProduction);
+
+    return nameMatch && productMatch && countryMatch && hqMatch && prodMatch;
+  });
+
+  // Add markers for filtered companies
+  filteredCompanies.forEach(company => {
+    const { headquarters_location } = company;
     
-        if (
-          headquarters_location &&
-          companyName.includes(filterName) &&
-          product.toLowerCase().includes(filterProduct) &&
-          country.toLowerCase().includes(filterCountry) &&
-          headquarters_location.toLowerCase().includes(filterHeadquartersLocation) &&
-          productionlocation.toLowerCase().includes(filterproductionLocation) 
-        ) {
-          axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(headquarters_location)}.json?access_token=pk.eyJ1IjoibW9vdGV6ZmFyd2EiLCJhIjoiY2x1Z3BoaTFqMW9hdjJpcGdibnN1djB5cyJ9.It7emRJnE-Ee59ysZKBOJw`)
-            .then(response => {
-              if (response.data.features && response.data.features.length > 0) {
-                const coordinates = response.data.features[0].geometry.coordinates;
-                
-                if (filters.region) {
-                  const boundaries = regionBoundaries[filters.region];
-                  if (boundaries) {
-                    const [lng, lat] = coordinates;
-                    if (
-                      lat < boundaries.minLat || lat > boundaries.maxLat ||
-                      lng < boundaries.minLng || lng > boundaries.maxLng
-                    ) {
-                      return; // Skip if outside region
-                    }
-                  }
-                }
-    
-                const marker = new mapboxgl.Marker({
-                  scale: 0.7
-                })
-                  .setLngLat(coordinates)
-                  .addTo(map.current);
-    
-                const el = marker.getElement();
-                el.addEventListener('click', (e) => {
-                  e.stopPropagation();
-                  showModal(company);
-                });
+    axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(headquarters_location)}.json?access_token=${mapboxgl.accessToken}`)
+      .then(response => {
+        if (response.data.features && response.data.features.length > 0) {
+          const coordinates = response.data.features[0].geometry.coordinates;
+
+          // Apply region filter if selected
+          if (filters.region) {
+            const boundaries = regionBoundaries[filters.region];
+            if (boundaries) {
+              const [lng, lat] = coordinates;
+              if (
+                lat < boundaries.minLat || lat > boundaries.maxLat ||
+                lng < boundaries.minLng || lng > boundaries.maxLng
+              ) {
+                return; // Skip if outside region
               }
-            })
-            .catch(error => {
-              console.error('Error fetching headquarters location:', error);
-            });
+            }
+          }
+
+          // Create marker with green color for HQ locations
+          const marker = new mapboxgl.Marker({ 
+            color: '#00CC66', // Green color for HQ
+            scale: 0.7 
+          })
+            .setLngLat(coordinates)
+            .setPopup(new mapboxgl.Popup({ offset: 10 }).setHTML(`
+              <div style="font-family: Arial, sans-serif; padding: 8px;">
+                <h3 style="margin: 5px 0; font-size: 16px; color: #00CC66;">${company.name}</h3>
+                <p style="margin: 2px 0; font-size: 14px;"><strong>Headquarters:</strong> ${headquarters_location}</p>
+                <p style="margin: 2px 0; font-size: 14px;"><strong>Product:</strong> ${company.product || 'N/A'}</p>
+                <p style="margin: 2px 0; font-size: 14px;"><strong>Country:</strong> ${company.country || 'N/A'}</p>
+              </div>
+            `))
+            .addTo(map.current);
+
+          // Store marker reference for cleanup
+          hqMarkersRef.current.push(marker);
+
+          // Add click event for modal
+          const el = marker.getElement();
+          el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showModal(company);
+          });
         }
+      })
+      .catch(error => {
+        console.error('Error fetching HQ location:', error);
       });
-    }, [companies, filters, map, regionBoundaries, showModal, showHeadquarterLocation]);
+  });
+}, [companies, filters, map, regionBoundaries, showModal, showHeadquarterLocation]);
 
  
 const addMarkersproductionForFilteredCompanies = useCallback(() => {
@@ -355,7 +574,22 @@ const addMarkersproductionForFilteredCompanies = useCallback(() => {
 }, [companies, filters.ProductionLocation, filters.region, map, showproductionLocation, regionBoundaries]);
 
 
- const markersRef = useRef([]);
+const clearAllMarkers = () => {
+  // Clear R&D markers
+  rdMarkersRef.current.forEach(marker => marker.remove());
+  rdMarkersRef.current = [];
+  
+  // Clear HQ markers
+  hqMarkersRef.current.forEach(marker => marker.remove());
+  hqMarkersRef.current = [];
+  
+  // Clear Production markers
+  productionMarkersRef.current.forEach(marker => marker.remove());
+  productionMarkersRef.current = [];
+};
+
+
+  const markersRef = useRef([]);
 useEffect(() => {
     if (map.current) {
         const bounds = new mapboxgl.LngLatBounds();
@@ -434,17 +668,37 @@ useEffect(() => {
     }
 }, [companies, filters]);
 
- // Add markers for AVO plants
- const addAvoPlantMarkers = useCallback(() => {
-  avoPlants.forEach(plant => {
-    if (filters.avoPlant === '' || plant.name.toLowerCase() === (filters.avoPlant || '').toLowerCase()) {
-      new mapboxgl.Marker({ color: 'red', scale: 0.7 })
-        .setLngLat(plant.coordinates)
-        .setPopup(new mapboxgl.Popup().setHTML(`<h3>${plant.name}</h3>`))
-        .addTo(map.current);
+
+useEffect(() => {
+  if (!map.current || !companies.length) return;
+
+  if (isInitialLoad) {
+    // On initial load, show all markers
+    addAllMarkers();
+    setIsInitialLoad(false);
+  } else {
+    // On filter changes
+    clearAllMarkers();
+
+    // Show markers based on current filters
+    if (filters.RDLocation) {
+      addMarkersForFilteredCompanies();
+    } else if (filters.HeadquartersLocation) {
+      addMarkersheadquarterForFilteredCompanies();
+    } else if (filters.ProductionLocation) {
+      addMarkersproductionForFilteredCompanies();
+    } else {
+      // If no location filter is active, show all markers
+      addAllMarkers();
     }
-  });
-}, [filters.avoPlant, map]); // <-- ONLY map here, not map.current
+
+    // Always show AVO plants
+    addAvoPlantMarkers();
+  }
+}, [companies, filters, isInitialLoad, addAllMarkers, addMarkersForFilteredCompanies, 
+    addMarkersheadquarterForFilteredCompanies, addMarkersproductionForFilteredCompanies, 
+    addAvoPlantMarkers]);
+
 
 
 const findClosestCompany = useCallback(async (selectedPlantname, selectedPlantCoordinates, companies, mapboxToken) => {
@@ -535,33 +789,7 @@ const findClosestCompany = useCallback(async (selectedPlantname, selectedPlantCo
 }, []); // <- empty dependency array if no external variables used
 
 
-    useEffect(() => {
-        if (!map.current) {
-           map.current = new mapboxgl.Map({
-           container: mapContainerRef.current,
-           style: 'mapbox://styles/mapbox/streets-v11',
-           center: [0, 0],
-            zoom: 1, // Start with a broader view
-            preserveDrawingBuffer: true // Critical for PDF export
-            });
-            map.current.on('load', () => {
-                // Add markers for the filtered companies after the map has loaded
-                addMarkersForFilteredCompanies();
-                addMarkersheadquarterForFilteredCompanies();
-                addMarkersproductionForFilteredCompanies();
-                addAvoPlantMarkers();
-            });
-        } else {
-            // Clear existing markers before adding new ones
-            clearMarkers();
-            // Add markers for the filtered companies
-            addMarkersForFilteredCompanies();
-            addMarkersheadquarterForFilteredCompanies();
-            addMarkersproductionForFilteredCompanies();
-            addAvoPlantMarkers();
-        }
-    }, [companies, filters,showRdLocation, showHeadquarterLocation,showproductionLocation, addAvoPlantMarkers, addMarkersForFilteredCompanies, addMarkersheadquarterForFilteredCompanies, addMarkersproductionForFilteredCompanies]);
- 
+
 
     const addAvoPlantPopup = useCallback(() => {
       if (!filters.avoPlant) return;
@@ -603,12 +831,13 @@ const fetchCompanies = async () => {
     const response = await axios.get('https://compt-back.azurewebsites.net/companies/');
 
     const processedData = response.data.map(company => {
-     const productionLocations = company.productionlocation 
+  const productionLocations = company.productionlocation 
     ? company.productionlocation
         .split(';')
         .map(loc => loc.trim().replace(/^"|"$/g, '')) // ✅ Removes leading/trailing quotes
         .filter(Boolean)
     : [];
+
 
       return {
         ...company,
@@ -752,47 +981,78 @@ const handleRegionChange = (event) => {
 };
 
    
-    const handlefilterrdlocationchange = (event) => {
-        const selectedRdLocation = event.target.value;
-        setFilters({ ...filters, RDLocation: selectedRdLocation })
-    }
-    const handleheadquarterfilterchange = (event) => {
-        const selectedheadquarter = event.target.value;
-        setFilters({ ...filters, HeadquartersLocation: selectedheadquarter })
-    }
+const handlefilterrdlocationchange = (event) => {
+  const selectedRdLocation = event.target.value;
+  setFilters(prev => ({
+    ...prev, 
+    RDLocation: selectedRdLocation,
+    HeadquartersLocation: '', // Clear HQ filter
+    ProductionLocation: '' // Clear production filter
+  }));
+};
+  
+    
+const handleheadquarterfilterchange = (event) => {
+  const selectedheadquarter = event.target.value;
+  setFilters(prev => ({
+    ...prev, 
+    HeadquartersLocation: selectedheadquarter,
+    // Keep other filters (company name, product, etc.)
+    RDLocation: '', // Clear R&D filter
+    ProductionLocation: '' // Clear production filter
+  }));
+};
 
 const handleproductfilterchange = (event) => {
   const selectedproduction = event.target.value;
   setFilters(prev => ({
     ...prev, 
     ProductionLocation: selectedproduction,
-    RDLocation: '',
-    HeadquartersLocation: ''
+    RDLocation: '', // Clear R&D filter
+    HeadquartersLocation: '' // Clear HQ filter
   }));
+};
 
-  // Clear existing markers
-  markersRef.current.forEach(marker => marker.remove());
-  markersRef.current = [];
-
-  if (selectedproduction) {
-    // Trigger the marker display function
-    addMarkersproductionForFilteredCompanies();
+const handleRdLocationCheckbox = (e) => {
+  const isChecked = e.target.checked;
+  setShowRdLocation(isChecked);
+  
+  if (!isChecked) {
+    // Remove all R&D markers if unchecked
+    rdMarkersRef.current.forEach(marker => marker.remove());
+    rdMarkersRef.current = [];
+  } else {
+    // Re-add filtered R&D markers if checked
+    addMarkersForFilteredCompanies();
   }
 };
 
- const handleRdLocationCheckbox = (e) => {
-    setShowRdLocation(e.target.checked); // Toggle R&D checkbox
-};
-
 const handleHeadquarterLocationCheckbox = (e) => {
-    setShowHeadquarterLocation(e.target.checked); // Toggle Headquarters checkbox
+  const isChecked = e.target.checked;
+  setShowHeadquarterLocation(isChecked);
+  
+  if (!isChecked) {
+    // Remove all R&D markers if unchecked
+    hqMarkersRef.current.forEach(marker => marker.remove());
+    hqMarkersRef.current = [];
+  } else {
+    // Re-add filtered R&D markers if checked
+    addMarkersheadquarterForFilteredCompanies();
+  }
 };
 const handleproductionLocationCheckbox = (e) => {
-  setShowproductionLocation(e.target.checked);
+  const isChecked = e.target.checked;
+  setShowproductionLocation(isChecked);
   
-
+  if (!isChecked) {
+    // Remove all R&D markers if unchecked
+    productionMarkersRef.current.forEach(marker => marker.remove());
+    productionMarkersRef.current = [];
+  } else {
+    // Re-add filtered R&D markers if checked
+    addMarkersproductionForFilteredCompanies();
+  }
 };
-
 
 
 // Modified handleDownloadPDF function
@@ -1153,22 +1413,22 @@ const visibleCompanies = companies.filter(company => {
                         ))}
                     </select>
  
-                    <select
-                        value={filters.HeadquartersLocation}
-                        onChange={handleheadquarterfilterchange}
-                        style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none', width:'120px'}}
-                    >
-                        <option value="">HQ Location</option>
-                        {headquarterlocation.map((name, index) => (
-                            <option key={index} value={name}>{name}</option>
-                        ))}
-                    </select>
+                     <select
+                   value={filters.HeadquartersLocation}
+                   onChange={handleheadquarterfilterchange}
+                  style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none' }}
+                     >
+                   <option value="">HQ Location</option>
+                    {Array.isArray(headquarterlocation) && headquarterlocation.map((name, index) => (
+                    <option key={index} value={name}>{name}</option>
+                    ))}
+                </select>
 
                      
                  <select
                    value={filters.ProductionLocation}
                    onChange={handleproductfilterchange}
-                   style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none', width:'120px'}}
+                  style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none' }}
                    >
                   <option value="">All Production Locations</option>
                 {productionlocation.map((location, index) => (
