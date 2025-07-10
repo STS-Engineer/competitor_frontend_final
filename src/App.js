@@ -61,7 +61,16 @@ const handleAccessGranted = (email) => {
         <Routes>
           <Route path="/" element={<Homepage />} />
           <Route path="/map" element={<Map />} />
-          <Route path="/form" element={<Form />} />
+          <Route
+           path="/form"
+           element={
+           accessGranted ? (
+           <Form onAccessGranted={handleAccessGranted} />
+           ) : (
+          <Navigate to="/access" replace />
+            )
+           }
+          />
           <Route
             path="/access"
             element={<AccessRequest onAccessGranted={handleAccessGranted} />}
