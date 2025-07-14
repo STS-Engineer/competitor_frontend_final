@@ -673,31 +673,42 @@ useEffect(() => {
   if (!map.current || !companies.length) return;
 
   if (isInitialLoad) {
-    // On initial load, show all markers
-    addAllMarkers();
+    addAllMarkers(); // Show everything at first
     setIsInitialLoad(false);
   } else {
-    // On filter changes
     clearAllMarkers();
 
-    // Show markers based on current filters
-    if (filters.RDLocation) {
-      addMarkersForFilteredCompanies();
-    } else if (filters.HeadquartersLocation) {
-      addMarkersheadquarterForFilteredCompanies();
-    } else if (filters.ProductionLocation) {
-      addMarkersproductionForFilteredCompanies();
-    } else {
-      // If no location filter is active, show all markers
-      addAllMarkers();
+    // ✅ Show only R&D + HQ markers when filtering by companyName, Product, or Country
+    if (filters.companyName || filters.Product || filters.country) {
+      addMarkersForFilteredCompanies(); // R&D and HQ markers for matched companies
+       addMarkersheadquarterForFilteredCompanies(); 
+
     }
 
-    // Always show AVO plants
+    // ✅ Location-specific filters override general filters
+    else if (filters.RDLocation) {
+      addMarkersForFilteredCompanies(); // Only R&D markers
+    } else if (filters.HeadquartersLocation) {
+      addMarkersheadquarterForFilteredCompanies(); // Only HQ markers
+    } else if (filters.ProductionLocation) {
+      addMarkersproductionForFilteredCompanies(); // Only production markers
+    } else {
+      addAllMarkers(); // Fallback: show everything
+    }
+
+    // ✅ Always show AVO plant markers
     addAvoPlantMarkers();
   }
-}, [companies, filters, isInitialLoad, addAllMarkers, addMarkersForFilteredCompanies, 
-    addMarkersheadquarterForFilteredCompanies, addMarkersproductionForFilteredCompanies, 
-    addAvoPlantMarkers]);
+}, [
+  companies,
+  filters,
+  isInitialLoad,
+  addAllMarkers,
+  addMarkersForFilteredCompanies,
+  addMarkersheadquarterForFilteredCompanies,
+  addMarkersproductionForFilteredCompanies,
+  addAvoPlantMarkers
+]);
 
 
 
