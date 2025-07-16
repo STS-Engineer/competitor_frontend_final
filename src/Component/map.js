@@ -1373,37 +1373,28 @@ const checkboxInputStyle = {
 };
 
     return (
-        <div>
-            
-         <nav style={{ background: '#333', padding: '1rem' }}>
-  {/* Filters Container */}
-  <div style={{
-    display: 'flex',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: '0.5rem',
-    rowGap: '1rem'
-  }}>
-    <h2 style={{ color: '#fff', margin: '0', fontSize: '1rem', flexBasis: '100%' }}>
-      Filters:
-    </h2>
+    <div>    
+   <nav style={{ background: '#333', padding: '0.5rem' }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+    <h2 style={{ color: '#fff', margin: '0', fontSize: '0.875rem', marginRight: '0.5rem' }}>Filters:</h2>
 
-    {/* Filter dropdowns */}
+    {/* Compact filter dropdowns */}
     <select 
       name="companyName" 
       value={filters.companyName} 
       onChange={handleFilterChange}
       style={{
-        padding: '0.5rem',
-        borderRadius: '4px',
+        padding: '0.3rem 0.5rem',
+        borderRadius: '3px',
         border: '1px solid #ccc',
         backgroundColor: '#fff',
         color: '#333',
-        fontSize: '0.875rem',
-        minWidth: '150px'
+        fontSize: '0.75rem',
+        width: '120px',
+        height: '28px'
       }}
     >
-      <option value="">Company Name</option>
+      <option value="">Company</option>
       {companyNames.map((name, index) => (
         <option key={index} value={name}>{name}</option>
       ))}
@@ -1413,13 +1404,14 @@ const checkboxInputStyle = {
       value={filters.Product} 
       onChange={handleproductChange}
       style={{
-        padding: '0.5rem',
-        borderRadius: '4px',
+        padding: '0.3rem 0.5rem',
+        borderRadius: '3px',
         border: '1px solid #ccc',
         backgroundColor: '#fff',
         color: '#333',
-        fontSize: '0.875rem',
-        minWidth: '150px'
+        fontSize: '0.75rem',
+        width: '100px',
+        height: '28px'
       }}
     >
       <option value="">Product</option>
@@ -1432,13 +1424,14 @@ const checkboxInputStyle = {
       value={filters.country} 
       onChange={handlecountrychange}
       style={{
-        padding: '0.5rem',
-        borderRadius: '4px',
+        padding: '0.3rem 0.5rem',
+        borderRadius: '3px',
         border: '1px solid #ccc',
         backgroundColor: '#fff',
         color: '#333',
-        fontSize: '0.875rem',
-        minWidth: '150px'
+        fontSize: '0.75rem',
+        width: '100px',
+        height: '28px'
       }}
     >
       <option value="">Country</option>
@@ -1451,16 +1444,17 @@ const checkboxInputStyle = {
       value={filters.RDLocation} 
       onChange={handlefilterrdlocationchange}
       style={{
-        padding: '0.5rem',
-        borderRadius: '4px',
+        padding: '0.3rem 0.5rem',
+        borderRadius: '3px',
         border: '1px solid #ccc',
         backgroundColor: '#fff',
         color: '#333',
-        fontSize: '0.875rem',
-        width: '120px'
+        fontSize: '0.75rem',
+        width: '100px',
+        height: '28px'
       }}
     >
-      <option value="">R&D Location</option>
+      <option value="">R&D Loc.</option>
       {Rdlocation.map((name, index) => (
         <option key={index} value={name}>{name}</option>
       ))}
@@ -1470,16 +1464,17 @@ const checkboxInputStyle = {
       value={filters.HeadquartersLocation} 
       onChange={handleheadquarterfilterchange}
       style={{
-        padding: '0.5rem',
-        borderRadius: '4px',
+        padding: '0.3rem 0.5rem',
+        borderRadius: '3px',
         border: '1px solid #ccc',
         backgroundColor: '#fff',
         color: '#333',
-        fontSize: '0.875rem',
-        minWidth: '150px'
+        fontSize: '0.75rem',
+        width: '90px',
+        height: '28px'
       }}
     >
-      <option value="">HQ Location</option>
+      <option value="">HQ Loc.</option>
       {Array.isArray(headquarterlocation) && headquarterlocation.map((name, index) => (
         <option key={index} value={name}>{name}</option>
       ))}
@@ -1489,16 +1484,17 @@ const checkboxInputStyle = {
       value={filters.ProductionLocation} 
       onChange={handleproductfilterchange}
       style={{
-        padding: '0.5rem',
-        borderRadius: '4px',
+        padding: '0.3rem 0.5rem',
+        borderRadius: '3px',
         border: '1px solid #ccc',
         backgroundColor: '#fff',
         color: '#333',
-        fontSize: '0.875rem',
-        minWidth: '180px'
+        fontSize: '0.75rem',
+        width: '120px',
+        height: '28px'
       }}
     >
-      <option value="">All Production Locations</option>
+      <option value="">Production</option>
       {productionlocation.map((location, index) => (
         <option key={index} value={location}>{location}</option>
       ))}
@@ -1508,13 +1504,14 @@ const checkboxInputStyle = {
       value={filters.region} 
       onChange={handleRegionChange}
       style={{
-        padding: '0.5rem',
-        borderRadius: '4px',
+        padding: '0.3rem 0.5rem',
+        borderRadius: '3px',
         border: '1px solid #ccc',
         backgroundColor: '#fff',
         color: '#333',
-        fontSize: '0.875rem',
-        minWidth: '150px'
+        fontSize: '0.75rem',
+        width: '90px',
+        height: '28px'
       }}
     >
       <option value="">Region</option>
@@ -1529,90 +1526,92 @@ const checkboxInputStyle = {
         value={filters.avoPlant} 
         onChange={handleInputChange}
         style={{
-          padding: '0.5rem 2rem 0.5rem 1rem',
-          borderRadius: '4px',
+          padding: '0.3rem 1.5rem 0.3rem 0.5rem',
+          borderRadius: '3px',
           border: '1px solid #ccc',
           backgroundColor: '#fff',
           color: '#333',
-          fontSize: '0.875rem',
-          minWidth: '180px',
+          fontSize: '0.75rem',
+          width: '120px',
+          height: '28px',
           appearance: 'none',
           backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23333%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")',
           backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'right 0.7rem top 50%',
-          backgroundSize: '0.65rem auto'
+          backgroundPosition: 'right 0.5rem top 50%',
+          backgroundSize: '0.5rem auto'
         }}
       >
-        <option value="">AVOCarbon Plant</option>
+        <option value="">AVO Plant</option>
         {avoPlants.map(plant => (
           <option key={plant.name} value={plant.name}>{plant.name}</option>
         ))}
       </select>
     </div>
 
-    {/* Action buttons */}
-    <button 
-      onClick={handleDownloadExcel}
-      style={{
-        padding: '0.5rem 1rem',
-        borderRadius: '4px',
-        border: 'none',
-        backgroundColor: 'green',
-        color: 'white',
-        fontSize: '0.875rem',
-        cursor: 'pointer'
-      }}
-    >
-      Download Excel
-    </button>
+    {/* Buttons and checkboxes on next line */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginLeft: 'auto' }}>
+      <button 
+        onClick={handleDownloadExcel}
+        style={{
+          padding: '0.3rem 0.8rem',
+          borderRadius: '3px',
+          border: 'none',
+          backgroundColor: 'green',
+          color: 'white',
+          fontSize: '0.75rem',
+          cursor: 'pointer',
+          height: '28px'
+        }}
+      >
+        Excel
+      </button>
 
-    <button 
-      onClick={handleDownloadPDF}
-      style={{
-        padding: '0.5rem 1rem',
-        borderRadius: '4px',
-        border: 'none',
-        backgroundColor: 'red',
-        color: 'white',
-        fontSize: '0.875rem',
-        cursor: 'pointer'
-      }}
-    >
-      Download PDF
-    </button>
+      <button 
+        onClick={handleDownloadPDF}
+        style={{
+          padding: '0.3rem 0.8rem',
+          borderRadius: '3px',
+          border: 'none',
+          backgroundColor: 'red',
+          color: 'white',
+          fontSize: '0.75rem',
+          cursor: 'pointer',
+          height: '28px'
+        }}
+      >
+        PDF
+      </button>
 
-    {/* Checkboxes */}
-    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: 'auto' }}>
-      <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem' }}>
+      <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}>
         <input 
           type="checkbox" 
           checked={showproductionLocation} 
           onChange={handleproductionLocationCheckbox}
-          style={{ margin: '0', width: '1rem', height: '1rem' }} 
+          style={{ margin: '0', width: '0.9rem', height: '0.9rem' }} 
         />
-        Production Location
+        Production
       </label>
-      <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem' }}>
+      <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}>
         <input 
           type="checkbox" 
           checked={showRdLocation} 
           onChange={handleRdLocationCheckbox}
-          style={{ margin: '0', width: '1rem', height: '1rem' }} 
+          style={{ margin: '0', width: '0.9rem', height: '0.9rem' }} 
         />
-        R&D Location
+        R&D
       </label>
-      <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem' }}>
+      <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}>
         <input 
           type="checkbox" 
           checked={showHeadquarterLocation} 
           onChange={handleHeadquarterLocationCheckbox}
-          style={{ margin: '0', width: '1rem', height: '1rem' }} 
+          style={{ margin: '0', width: '0.9rem', height: '0.9rem' }} 
         />
-        Headquarters Location
+        HQ
       </label>
     </div>
   </div>
-</nav>
+    </nav>
       <div ref={mapContainerRef} style={{ width: '100vw', height: 'calc(100vh - 50px)' }} />
       <Modal
         title={selectedCompany?.name}
