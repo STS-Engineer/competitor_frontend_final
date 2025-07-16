@@ -288,18 +288,111 @@ const handleSubmit = async (event) => {
 
     if (mode === 'add') {
       response = await axios.post('https://compt-back.azurewebsites.net/companies', submitData);
-      setSuccessMessage('⏳Your request has been sent, waiting for admin approval');
-      // Reset form fields
+               // Reset form fields
       setFormData({
         ...formData, // Keep other fields if needed
+       name: '',
+        headquarters_location: '',
+        r_and_d_location: '',
+        country: '',
+        product: '',
+        email: '',  
+        employeestrength: '',
+        revenues: '',
+        telephone: '',
+        website: '',
+        productionvolumes: '',
+        keycustomers: '',
+        region: '',
+        foundingyear: '', // Add founding year field
+        rate: '',
+        offeringproducts:'',
+        pricingstrategy: '',
+        customerneeds:'',
+        technologyuse: '',
+        competitiveadvantage:'',
+        challenges: '',
+        recentnews:'',
+        productlaunch: '',
+        strategicpartenrship:'',
+        comments: '',
+        employeesperregion: '',
+        businessstrategies:'',
+        revenue: '',
+        ebit: '',
+        operatingcashflow: '',
+        investingcashflow: '',
+        freecashflow: '',
+        roce: '',
+        equityratio: '',
+        financialyear:'',
+        keymanagement: [],
+        ceo: '',
+        cfo: '',
+        cto: '',
+        rdhead: '',
+        saleshead: '',
+        productionhead: '',
+        keydecisionmarker: '',
+        generated_id: '',
         productionlocation: ''
       });
+      setSuccessMessage('⏳Your request has been sent, waiting for admin approval');
       setSelectedProductionLocations([]); // Clear the chips
     } else if (mode === 'edit') {
       response = await axios.put(
         `https://compt-back.azurewebsites.net/companies/${selectedCompanyId}`, 
         submitData
       );
+     // Reset form fields
+      setFormData({
+        ...formData, // Keep other fields if needed
+       name: '',
+        headquarters_location: '',
+        r_and_d_location: '',
+        country: '',
+        product: '',
+        email: '',  
+        employeestrength: '',
+        revenues: '',
+        telephone: '',
+        website: '',
+        productionvolumes: '',
+        keycustomers: '',
+        region: '',
+        foundingyear: '', // Add founding year field
+        rate: '',
+        offeringproducts:'',
+        pricingstrategy: '',
+        customerneeds:'',
+        technologyuse: '',
+        competitiveadvantage:'',
+        challenges: '',
+        recentnews:'',
+        productlaunch: '',
+        strategicpartenrship:'',
+        comments: '',
+        employeesperregion: '',
+        businessstrategies:'',
+        revenue: '',
+        ebit: '',
+        operatingcashflow: '',
+        investingcashflow: '',
+        freecashflow: '',
+        roce: '',
+        equityratio: '',
+        financialyear:'',
+        keymanagement: [],
+        ceo: '',
+        cfo: '',
+        cto: '',
+        rdhead: '',
+        saleshead: '',
+        productionhead: '',
+        keydecisionmarker: '',
+        generated_id: '',
+        productionlocation: ''
+      });
       setSuccessMessage('⏳Your request has been sent, waiting for admin approval');
     }
 
