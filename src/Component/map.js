@@ -1391,87 +1391,234 @@ const checkboxInputStyle = {
     </h2>
 
     {/* All your select inputs */}
-    <select name="companyName" value={filters.companyName} onChange={handleFilterChange} style={commonStyle}>
+    <select 
+      name="companyName" 
+      value={filters.companyName} 
+      onChange={handleFilterChange} 
+      style={{
+        padding: '0.5rem',
+        borderRadius: '4px',
+        border: '1px solid #ccc',
+        backgroundColor: '#fff',
+        color: '#333',
+        fontSize: '0.875rem',
+        minWidth: '150px'
+      }}
+    >
       <option value="">Company Name</option>
       {companyNames.map((name, index) => (
         <option key={index} value={name}>{name}</option>
       ))}
     </select>
 
-    <select value={filters.Product} onChange={handleproductChange} style={commonStyle}>
+    <select 
+      value={filters.Product} 
+      onChange={handleproductChange} 
+      style={{
+        padding: '0.5rem',
+        borderRadius: '4px',
+        border: '1px solid #ccc',
+        backgroundColor: '#fff',
+        color: '#333',
+        fontSize: '0.875rem',
+        minWidth: '150px'
+      }}
+    >
       <option value="">Product</option>
       {product.map((name, index) => (
         <option key={index} value={name}>{name}</option>
       ))}
     </select>
 
-    <select value={filters.country} onChange={handlecountrychange} style={commonStyle}>
+    <select 
+      value={filters.country} 
+      onChange={handlecountrychange} 
+      style={{
+        padding: '0.5rem',
+        borderRadius: '4px',
+        border: '1px solid #ccc',
+        backgroundColor: '#fff',
+        color: '#333',
+        fontSize: '0.875rem',
+        minWidth: '150px'
+      }}
+    >
       <option value="">Country</option>
       {countries.map((name, index) => (
         <option key={index} value={name}>{name}</option>
       ))}
     </select>
 
-    <select value={filters.RDLocation} onChange={handlefilterrdlocationchange} style={{ ...commonStyle, width: '120px' }}>
+    <select 
+      value={filters.RDLocation} 
+      onChange={handlefilterrdlocationchange} 
+      style={{
+        padding: '0.5rem',
+        borderRadius: '4px',
+        border: '1px solid #ccc',
+        backgroundColor: '#fff',
+        color: '#333',
+        fontSize: '0.875rem',
+        width: '120px'
+      }}
+    >
       <option value="">R&D Location</option>
       {Rdlocation.map((name, index) => (
         <option key={index} value={name}>{name}</option>
       ))}
     </select>
 
-    <select value={filters.HeadquartersLocation} onChange={handleheadquarterfilterchange} style={commonStyle}>
+    <select 
+      value={filters.HeadquartersLocation} 
+      onChange={handleheadquarterfilterchange} 
+      style={{
+        padding: '0.5rem',
+        borderRadius: '4px',
+        border: '1px solid #ccc',
+        backgroundColor: '#fff',
+        color: '#333',
+        fontSize: '0.875rem',
+        minWidth: '150px'
+      }}
+    >
       <option value="">HQ Location</option>
       {Array.isArray(headquarterlocation) && headquarterlocation.map((name, index) => (
         <option key={index} value={name}>{name}</option>
       ))}
     </select>
 
-    <select value={filters.ProductionLocation} onChange={handleproductfilterchange} style={commonStyle}>
+    <select 
+      value={filters.ProductionLocation} 
+      onChange={handleproductfilterchange} 
+      style={{
+        padding: '0.5rem',
+        borderRadius: '4px',
+        border: '1px solid #ccc',
+        backgroundColor: '#fff',
+        color: '#333',
+        fontSize: '0.875rem',
+        minWidth: '150px'
+      }}
+    >
       <option value="">All Production Locations</option>
       {productionlocation.map((location, index) => (
         <option key={index} value={location}>{location}</option>
       ))}
     </select>
 
-    <select value={filters.region} onChange={handleRegionChange} style={commonStyle}>
+    <select 
+      value={filters.region} 
+      onChange={handleRegionChange} 
+      style={{
+        padding: '0.5rem',
+        borderRadius: '4px',
+        border: '1px solid #ccc',
+        backgroundColor: '#fff',
+        color: '#333',
+        fontSize: '0.875rem',
+        minWidth: '150px'
+      }}
+    >
       <option value="">Region</option>
       {Object.keys(regionBoundaries).map((name) => (
         <option key={name} value={name}>{name}</option>
       ))}
     </select>
 
-    <select name="avoPlant" value={filters.avoPlant} onChange={handleInputChange} style={commonStyle}>
+    <select 
+      name="avoPlant" 
+      value={filters.avoPlant} 
+      onChange={handleInputChange} 
+      style={{
+        padding: '0.5rem',
+        borderRadius: '4px',
+        border: '1px solid #ccc',
+        backgroundColor: '#fff',
+        color: '#333',
+        fontSize: '0.875rem',
+        minWidth: '150px'
+      }}
+    >
       <option value="">AVOCarbon Plant</option>
       {avoPlants.map(plant => (
         <option key={plant.name} value={plant.name}>{plant.name}</option>
       ))}
     </select>
 
-    <button onClick={handleDownloadExcel} style={{ ...buttonStyle, backgroundColor: 'green', color: 'white', padding: '10px 20px' }}>
+    <button 
+      onClick={handleDownloadExcel} 
+      style={{
+        padding: '10px 20px',
+        borderRadius: '4px',
+        border: 'none',
+        backgroundColor: 'green',
+        color: 'white',
+        fontSize: '0.875rem',
+        cursor: 'pointer'
+      }}
+    >
       Download Excel
     </button>
-    <button onClick={handleDownloadPDF} style={{ ...buttonStyle, backgroundColor: 'red', color: 'white', padding: '10px 20px' }}>
+    <button 
+      onClick={handleDownloadPDF} 
+      style={{
+        padding: '10px 20px',
+        borderRadius: '4px',
+        border: 'none',
+        backgroundColor: 'red',
+        color: 'white',
+        fontSize: '0.875rem',
+        cursor: 'pointer'
+      }}
+    >
       Download PDF
     </button>
 
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-      <label style={checkboxLabelStyle}>
-        <input type="checkbox" checked={showproductionLocation} onChange={handleproductionLocationCheckbox} style={checkboxInputStyle} />
+      <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem' }}>
+        <input 
+          type="checkbox" 
+          checked={showproductionLocation} 
+          onChange={handleproductionLocationCheckbox} 
+          style={{
+            margin: '0',
+            width: '1rem',
+            height: '1rem'
+          }} 
+        />
         Production Location
       </label>
-      <label style={checkboxLabelStyle}>
-        <input type="checkbox" checked={showRdLocation} onChange={handleRdLocationCheckbox} style={checkboxInputStyle} />
+      <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem' }}>
+        <input 
+          type="checkbox" 
+          checked={showRdLocation} 
+          onChange={handleRdLocationCheckbox} 
+          style={{
+            margin: '0',
+            width: '1rem',
+            height: '1rem'
+          }} 
+        />
         R&D Location
       </label>
-      <label style={checkboxLabelStyle}>
-        <input type="checkbox" checked={showHeadquarterLocation} onChange={handleHeadquarterLocationCheckbox} style={checkboxInputStyle} />
+      <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem' }}>
+        <input 
+          type="checkbox" 
+          checked={showHeadquarterLocation} 
+          onChange={handleHeadquarterLocationCheckbox} 
+          style={{
+            margin: '0',
+            width: '1rem',
+            height: '1rem'
+          }} 
+        />
         Headquarters Location
       </label>
     </div>
   </div>
 </nav>
-            <div ref={mapContainerRef} style={{ width: '100vw', height: 'calc(100vh - 50px)' }} />
-                 <Modal
+      <div ref={mapContainerRef} style={{ width: '100vw', height: 'calc(100vh - 50px)' }} />
+      <Modal
         title={selectedCompany?.name}
         open={isModalVisible}
         onCancel={handleCancel}
