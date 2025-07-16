@@ -1549,7 +1549,7 @@ const checkboxInputStyle = {
     </div>
 
     {/* Buttons and checkboxes on next line */}
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginLeft: 'auto' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
       <button 
         onClick={handleDownloadExcel}
         style={{
