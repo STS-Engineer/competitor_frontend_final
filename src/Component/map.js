@@ -87,6 +87,8 @@ useEffect(() => {
 }, []);
 
 
+
+
      const addAvoPlantMarkers = useCallback(() => {
   avoPlants.forEach(plant => {
     if (filters.avoPlant === '' || plant.name.toLowerCase() === (filters.avoPlant || '').toLowerCase()) {
@@ -227,7 +229,8 @@ const addMarkersForFilteredCompanies = useCallback(() => {
     const compRegion = (region || '').toLowerCase().trim();
 
     // Apply all filters
-    const nameMatch = !filterName || companyName.includes(filterName);
+   const nameMatch = !filterName || companyName.includes(filterName);
+
     const productMatch = !filterProduct || prod.includes(filterProduct);
     const countryMatch = !filterCountry || cnt.includes(filterCountry);
     const rdLocationMatch = !filterRdLocation || rdLoc.includes(filterRdLocation);
@@ -425,73 +428,92 @@ const addMarkersheadquarterForFilteredCompanies = useCallback(() => {
 
  
 const addMarkersproductionForFilteredCompanies = useCallback(() => {
+  // Clear existing markers first
+  productionMarkersRef.current.forEach(marker => marker.remove());
+  productionMarkersRef.current = [];
+
   if (!showproductionLocation) return;
 
-  // Clear existing markers first
-  markersRef.current.forEach(marker => marker.remove());
-  markersRef.current = [];
+  // Get all active filter values (normalized)
+  const filterName = (filters.companyName || '').toLowerCase().trim();
+  const filterProduct = (filters.Product || '').toLowerCase().trim();
+  const filterCountry = (filters.country || '').toLowerCase().trim();
+  const filterRegion = (filters.region || '').toLowerCase().trim();
+  const filterProduction = (filters.ProductionLocation || '').toLowerCase().trim();
 
-  // Case 1: A specific production location is selected (filtering mode)
-  if (filters.ProductionLocation) {
-    const locationCompetitors = companies.filter(company =>
-      company.productionLocations?.some(loc =>
-        loc.toLowerCase() === filters.ProductionLocation.toLowerCase()
-      )
-    );
+  // Filter companies based on all criteria
+  const filteredCompanies = companies.filter(company => {
+    const {
+      name,
+      product,
+      country,
+      region,
+      productionLocations = []
+    } = company;
 
-    if (locationCompetitors.length === 0) {
-      Swal.fire({
-        title: 'No Competitors Found',
-        text: `No companies found with production location: ${filters.ProductionLocation}`,
-        icon: 'info',
-        timer: 2000
-      });
-      return;
-    }
+    // Skip if no production locations
+    if (!productionLocations || productionLocations.length === 0) return false;
 
-    // Geocode the selected location
-    axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(filters.ProductionLocation)}.json?access_token=${mapboxgl.accessToken}`)
-      .then(response => {
-        if (!response.data.features?.length) return;
+    // Normalize company data
+    const companyName = (name || '').toLowerCase().trim();
+    const prod = (product || '').toLowerCase().trim();
+    const cnt = (country || '').toLowerCase().trim();
+    const reg = (region || '').toLowerCase().trim();
 
-        const locationCoords = response.data.features[0].geometry.coordinates;
-        const [lng, lat] = locationCoords;
+    // Apply all filters
+    const nameMatch = !filterName || companyName.includes(filterName);
+    const productMatch = !filterProduct || prod.includes(filterProduct);
+    const countryMatch = !filterCountry || cnt.includes(filterCountry);
+    const regionMatch = !filterRegion || reg.includes(filterRegion);
+    
+    // Special handling for production location filter
+    const productionMatch = !filterProduction || 
+      productionLocations.some(loc => 
+        loc.toLowerCase().includes(filterProduction)
+      );
 
-        // Region filter check
-        if (filters.region) {
-          const boundaries = regionBoundaries[filters.region];
-          if (boundaries) {
-            if (
-              lat < boundaries.minLat || lat > boundaries.maxLat ||
-              lng < boundaries.minLng || lng > boundaries.maxLng
-            ) {
-              Swal.fire({
-                title: 'Outside Region',
-                text: `The selected production location is not in the selected region.`,
-                icon: 'info',
-                timer: 2000
-              });
-              return;
+    return nameMatch && productMatch && countryMatch && 
+           regionMatch && productionMatch;
+  });
+
+  // Add markers for filtered companies
+  filteredCompanies.forEach(company => {
+    company.productionLocations.forEach(location => {
+      // Skip if specific production location is filtered and doesn't match
+      if (filterProduction && !location.toLowerCase().includes(filterProduction)) {
+        return;
+      }
+
+      axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(location)}.json?access_token=${mapboxgl.accessToken}`)
+        .then(response => {
+          if (!response.data.features?.length) return;
+
+          const coordinates = response.data.features[0].geometry.coordinates;
+          const [lng, lat] = coordinates;
+
+          // Apply region boundary filter if selected
+          if (filters.region) {
+            const boundaries = regionBoundaries[filters.region];
+            if (boundaries) {
+              if (
+                lat < boundaries.minLat || lat > boundaries.maxLat ||
+                lng < boundaries.minLng || lng > boundaries.maxLng
+              ) {
+                return; // Skip if outside region
+              }
             }
           }
-        }
 
-        locationCompetitors.forEach((company, index) => {
-          const offset = index % 2 === 0 ? 0.01 : -0.01;
-          const markerCoords = [
-            locationCoords[0] + offset,
-            locationCoords[1] + offset
-          ];
-
+          // Create marker
           const marker = new mapboxgl.Marker({
             color: '#FF5733',
-            scale: 0.9
+            scale: 0.7
           })
-            .setLngLat(markerCoords)
+            .setLngLat(coordinates)
             .setPopup(new mapboxgl.Popup().setHTML(`
               <div>
                 <h3>${company.name}</h3>
-                <p>Production: ${filters.ProductionLocation}</p>
+                <p>Production: ${location}</p>
                 <p>Country: ${company.country}</p>
                 <p>Product: ${company.product}</p>
                 ${company.headquarters_location ? `<p>HQ: ${company.headquarters_location}</p>` : ''}
@@ -499,79 +521,24 @@ const addMarkersproductionForFilteredCompanies = useCallback(() => {
             `))
             .addTo(map.current);
 
-          markersRef.current.push(marker);
+          productionMarkersRef.current.push(marker);
+        })
+        .catch(error => {
+          console.error('Error geocoding production location:', error);
         });
-
-        // Zoom to location
-        map.current.flyTo({
-          center: locationCoords,
-          zoom: 10,
-          padding: { top: 100, bottom: 100, left: 100, right: 100 }
-        });
-
-        // Show count popup
-        new mapboxgl.Popup()
-          .setLngLat(locationCoords)
-          .setHTML(`<strong>${filters.ProductionLocation}</strong><br>${locationCompetitors.length} competitors`)
-          .addTo(map.current);
-      })
-      .catch(error => {
-        console.error('Error geocoding location:', error);
-        Swal.fire({
-          title: 'Location Error',
-          text: `Could not find coordinates for ${filters.ProductionLocation}`,
-          icon: 'error'
-        });
-      });
-
-  } else {
-    // Case 2: No filter selected → show all production locations
-    companies.forEach(company => {
-      company.productionLocations?.forEach(location => {
-        axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(location)}.json?access_token=${mapboxgl.accessToken}`)
-          .then(response => {
-            if (!response.data.features?.length) return;
-
-            const coordinates = response.data.features[0].geometry.coordinates;
-            const [lng, lat] = coordinates;
-
-            // Region filter check
-            if (filters.region) {
-              const boundaries = regionBoundaries[filters.region];
-              if (boundaries) {
-                if (
-                  lat < boundaries.minLat || lat > boundaries.maxLat ||
-                  lng < boundaries.minLng || lng > boundaries.maxLng
-                ) {
-                  return; // Skip if outside region
-                }
-              }
-            }
-
-            const marker = new mapboxgl.Marker({
-              color: '#FF5733',
-              scale: 0.7
-            })
-              .setLngLat(coordinates)
-              .setPopup(new mapboxgl.Popup().setHTML(`
-                <div>
-                  <h3>${company.name}</h3>
-                  <p>Production: ${location}</p>
-                  <p>Country: ${company.country}</p>
-                  <p>Product: ${company.product}</p>
-                </div>
-              `))
-              .addTo(map.current);
-
-            markersRef.current.push(marker);
-          })
-          .catch(error => {
-            console.error('Error geocoding production location:', error);
-          });
-      });
     });
-  }
-}, [companies, filters.ProductionLocation, filters.region, map, showproductionLocation, regionBoundaries]);
+  });
+}, [
+  companies, 
+  filters.companyName,
+  filters.Product,
+  filters.country,
+  filters.region,
+  filters.ProductionLocation,
+  showproductionLocation,
+  map,
+  regionBoundaries
+]);
 
 
 const clearAllMarkers = () => {
@@ -668,7 +635,6 @@ useEffect(() => {
     }
 }, [companies, filters]);
 
-
 useEffect(() => {
   if (!map.current || !companies.length) return;
 
@@ -678,11 +644,11 @@ useEffect(() => {
   } else {
     clearAllMarkers();
 
-    // ✅ Show only R&D + HQ markers when filtering by companyName, Product, or Country
+    // ✅ Show R&D, HQ, and Production markers when filtering by companyName, Product, or Country
     if (filters.companyName || filters.Product || filters.country) {
-      addMarkersForFilteredCompanies(); // R&D and HQ markers for matched companies
-       addMarkersheadquarterForFilteredCompanies(); 
-
+      addMarkersForFilteredCompanies(); // R&D markers
+      addMarkersheadquarterForFilteredCompanies(); // HQ markers
+      addMarkersproductionForFilteredCompanies(); // 🆕 Production markers
     }
 
     // ✅ Location-specific filters override general filters
@@ -1121,22 +1087,8 @@ const visibleCompanies = companies.filter(company => {
       return;
     }
 
-    const originalView = {
-      center: map.current.getCenter(),
-      zoom: map.current.getZoom(),
-      pitch: map.current.getPitch(),
-      bearing: map.current.getBearing()
-    };
 
-    // Fit bounds and wait until map settles
-    await new Promise(resolve => {
-      map.current.fitBounds(bounds, {
-        padding: 100,
-        maxZoom: 14,
-        duration: 1000
-      });
-      map.current.once('idle', resolve);
-    });
+
 
     // Wait a bit more to make sure markers are added
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -1181,7 +1133,7 @@ const visibleCompanies = companies.filter(company => {
     pdf.addImage(imgData, 'PNG', x, y, width, height);
 
     // Restore original view
-    map.current.jumpTo(originalView);
+
     addMarkersForFilteredCompanies();
     addMarkersheadquarterForFilteredCompanies();
     addAvoPlantMarkers();
@@ -1276,7 +1228,7 @@ const visibleCompanies = companies.filter(company => {
       'Strategic Partnership', 'Comments', 'Employees Per Region', 'Business Strategies', 
       'Year of financial detail', 'Revenue', 'EBIT', 'Operating Cash Flow', 'Investing Cash Flow', 
       'Free Cash Flow', 'ROCE', 'Equity Ratio', 'CEO', 'CFO', 'CTO', 'RD&head', 'Sales head', 
-      'Production head', 'Key decision marker'
+      'Production head', 'Key decision marker', 'Requester','Approver'
     ];
 
     const rows = validCompanies.map(company => [
@@ -1289,7 +1241,7 @@ const visibleCompanies = companies.filter(company => {
       company.employeesperregion, company.businessstrategies, company.financialyear, company.revenue, 
       company.ebit, company.operatingcashflow, company.investingcashflow, company.freecashflow, 
       company.roce, company.equityratio, company.ceo, company.cfo, company.cto, company.rdhead, 
-      company.saleshead, company.productionhead, company.keydecisionmarker
+      company.saleshead, company.productionhead, company.keydecisionmarker, company.emailrequester, 'parimmal.patkki@avocarbon.com'
     ]);
 
     // Create workbook with XlsxPopulate
@@ -1353,10 +1305,26 @@ const visibleCompanies = companies.filter(company => {
 };
 
  
-    const handleFilterChange = (e) => {
-        const { name, value } = e.target;
-        setFilters({ ...filters, [name]: value });
-    };
+const handleFilterChange = (e) => {
+  const { name, value } = e.target;
+
+  if (name === 'companyName') {
+    setFilters(prev => ({
+      ...prev,
+      companyName: value,
+      RDLocation: '',
+      HeadquartersLocation: '',
+      ProductionLocation: ''
+    }));
+  } else {
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  }
+};
+
+
  
 
  
@@ -1376,150 +1344,151 @@ const visibleCompanies = companies.filter(company => {
     };
    
  
-   
+   const commonStyle = {
+  padding: '0.25rem 0.5rem',
+  fontSize: '0.8rem',
+  marginRight: '0.25rem',
+  borderRadius: '3px',
+  border: 'none'
+};
+
+const buttonStyle = {
+  padding: '0.25rem 0.5rem',
+  fontSize: '0.8rem',
+  borderRadius: '3px',
+  border: 'none',
+  cursor: 'pointer'
+};
+
+const checkboxLabelStyle = {
+  color: '#fff',
+  fontSize: '0.8rem',
+  marginRight: '0.5rem',
+  display: 'flex',
+  alignItems: 'center'
+};
+
+const checkboxInputStyle = {
+  marginRight: '0.25rem'
+};
+
     return (
         <div>
             
-            <nav style={{ background:'#333', padding: '1rem',   display: 'flex', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <h2 style={{ color: '#fff', margin: '0', marginRight: '1rem' }}>Filters:</h2>
-                    <select name="companyName" value={filters.companyName} onChange={handleFilterChange}
-                    style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '4px', border: 'none' }}>
-                        <option value="">Company Name</option>
-                        {companyNames.map((name, index) => (
-                            <option key={index} value={name}>{name}</option>
-                        ))}
-                    </select>
- 
-                    <select
-                        value={filters.Product}
-                        onChange={handleproductChange}
-                        style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none'}}
-                    >
-                        <option value="">Product</option>
-                        {product.map((name, index) => (
-                            <option key={index} value={name}>{name}</option>
-                        ))}
-                    </select>
- 
-                    <select
-                        value={filters.country}
-                        onChange={handlecountrychange}
-                        style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none' }}
-                    >
-                        <option value="">Country</option>
-                        {countries.map((name, index) => (
-                            <option key={index} value={name}>{name}</option>
-                        ))}
-                    </select>
- 
-                    <select
-                        value={filters.RDLocation}
-                        onChange={handlefilterrdlocationchange}
-                        style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none', width:'120px'}}
-                    >
-                        <option value="">R&D Location</option>
-                        {Rdlocation.map((name, index) => (
-                            <option key={index} value={name}>{name}</option>
-                        ))}
-                    </select>
- 
-                     <select
-                   value={filters.HeadquartersLocation}
-                   onChange={handleheadquarterfilterchange}
-                   style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none', width:'120px'}}
-                     >
-                   <option value="">HQ Location</option>
-                    {Array.isArray(headquarterlocation) && headquarterlocation.map((name, index) => (
-                    <option key={index} value={name}>{name}</option>
-                    ))}
-                </select>
+ <nav style={{ background: '#333', padding: '1rem', display: 'flex', flexDirection: 'column' }}>
+  {/* Filters Container */}
+  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+    <h2 style={{ color: '#fff', margin: '0', fontSize: '1rem' }}>Filters:</h2>
 
-                     
-                 <select
-                   value={filters.ProductionLocation}
-                   onChange={handleproductfilterchange}
-                  style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none', width:'120px'}}
-                   >
-                  <option value="">All Production Locations</option>
-                {productionlocation.map((location, index) => (
-                   <option key={index} value={location}>
-                  {location} {/* Show count */}
-                   </option>
-                  ))}
-                      </select>
+    <select name="companyName" value={filters.companyName} onChange={handleFilterChange}
+      style={commonStyle}>
+      <option value="">Company Name</option>
+      {companyNames.map((name, index) => (
+        <option key={index} value={name}>{name}</option>
+      ))}
+    </select>
 
-                  <select
-                 value={filters.region}
-                 onChange={handleRegionChange}
-               style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none' }}
-                   >
-              <option value="">Region</option>
-              {Object.keys(regionBoundaries).map((name) => (
-            <option key={name} value={name}>{name}</option>
-           ))}
-           </select>
+    <select value={filters.Product} onChange={handleproductChange} style={commonStyle}>
+      <option value="">Product</option>
+      {product.map((name, index) => (
+        <option key={index} value={name}>{name}</option>
+      ))}
+    </select>
+
+    <select value={filters.country} onChange={handlecountrychange} style={commonStyle}>
+      <option value="">Country</option>
+      {countries.map((name, index) => (
+        <option key={index} value={name}>{name}</option>
+      ))}
+    </select>
+
+    <select value={filters.RDLocation} onChange={handlefilterrdlocationchange}
+      style={{ ...commonStyle, width: '120px' }}>
+      <option value="">R&D Location</option>
+      {Rdlocation.map((name, index) => (
+        <option key={index} value={name}>{name}</option>
+      ))}
+    </select>
+
+    <select value={filters.HeadquartersLocation} onChange={handleheadquarterfilterchange}
+      style={commonStyle}>
+      <option value="">HQ Location</option>
+      {Array.isArray(headquarterlocation) && headquarterlocation.map((name, index) => (
+        <option key={index} value={name}>{name}</option>
+      ))}
+    </select>
+
+    <select value={filters.ProductionLocation} onChange={handleproductfilterchange}
+      style={commonStyle}>
+      <option value="">All Production Locations</option>
+      {productionlocation.map((location, index) => (
+        <option key={index} value={location}>{location}</option>
+      ))}
+    </select>
+
+    <select value={filters.region} onChange={handleRegionChange} style={commonStyle}>
+      <option value="">Region</option>
+      {Object.keys(regionBoundaries).map((name) => (
+        <option key={name} value={name}>{name}</option>
+      ))}
+    </select>
 
 
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-                <label style={{ color: '#fff', marginRight: '1rem' }}>
-                    <input
-                        type="checkbox"
-                        checked={showproductionLocation}
-                        onChange={handleproductionLocationCheckbox}
-                        style={{ marginRight: '0.5rem' }}
-                    />
-                    Production Location
-                </label>
-                <label style={{ color: '#fff', marginRight: '1rem' }}>
-                    <input
-                        type="checkbox"
-                        checked={showRdLocation}
-                        onChange={handleRdLocationCheckbox}
-                        style={{ marginRight: '0.5rem' }}
-                    />
-                    R&D Location
-                </label>
-                <label style={{ color: '#fff' }}>
-                    <input
-                        type="checkbox"
-                        checked={showHeadquarterLocation}
-                        onChange={handleHeadquarterLocationCheckbox}
-                        style={{ marginRight: '0.5rem' }}
-                    />
-                    Headquarters Location
-                </label>
-            </div>
-                <select
-               name="avoPlant"
-               value={filters.avoPlant}
-              onChange={handleInputChange}
-              style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none' }}
-               >
-             <option value="">AVOCarbon Plant</option>
-            {avoPlants.map(plant => (
-           <option key={plant.name} value={plant.name}>{plant.name}</option>
-            ))}
-          </select>
- 
- 
-                    {/* {Object.entries(filters).map(([key, value]) => (
-                        key !== 'companyName' && key !== 'Product' && key !== 'country' && key !== 'Rdlocation' && key !== 'HeadquartersLocation' && key !== 'region' &&  // Exclude company name from other filters
-                        <input
-                            key={key}
-                            type="text"
-                            placeholder={key.charAt(0).toUpperCase() + key.slice(1) + '...'}
-                            value={value}
-                            onChange={(event) => handleFilterChange(event, key)}
-                            style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none' }}
-                        />
-                    ))} */}
-                    <button  onClick={handleDownloadExcel} style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none', backgroundColor: 'green', color: 'white' }}>Download excel file</button>
-                    <button onClick={handleDownloadPDF} style={{ padding: '0.5rem', marginRight: '1rem', borderRadius: '5px', border: 'none', backgroundColor: 'red', color: 'white' }}>Download pdf file</button>
-                    
- 
-                </div>
-            </nav>
+<select name="avoPlant" value={filters.avoPlant} onChange={handleInputChange} style={commonStyle}>
+  <option value="">AVOCarbon Plant</option>
+  {avoPlants.map(plant => (
+    <option key={plant.name} value={plant.name}>{plant.name}</option>
+  ))}
+</select>
+
+<button
+  onClick={handleDownloadExcel}
+  style={{ ...buttonStyle, backgroundColor: 'green', color: 'white',  padding: '10px 20px'  }}
+>
+  Download Excel
+</button>
+<button
+  onClick={handleDownloadPDF}
+  style={{ ...buttonStyle, backgroundColor: 'red', color: 'white', padding: '10px 20px'  }}
+>
+  Download PDF
+</button>
+
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <label style={checkboxLabelStyle}>
+        <input
+          type="checkbox"
+          checked={showproductionLocation}
+          onChange={handleproductionLocationCheckbox}
+          style={checkboxInputStyle}
+        />
+        Production Location
+      </label>
+      <label style={checkboxLabelStyle}>
+        <input
+          type="checkbox"
+          checked={showRdLocation}
+          onChange={handleRdLocationCheckbox}
+          style={checkboxInputStyle}
+        />
+        R&D Location
+      </label>
+      <label style={checkboxLabelStyle}>
+        <input
+          type="checkbox"
+          checked={showHeadquarterLocation}
+          onChange={handleHeadquarterLocationCheckbox}
+          style={checkboxInputStyle}
+        />
+        Headquarters Location
+      </label>
+    </div>
+
+  </div>
+
+
+</nav>
+
             <div ref={mapContainerRef} style={{ width: '100vw', height: 'calc(100vh - 50px)' }} />
                  <Modal
         title={selectedCompany?.name}
