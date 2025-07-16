@@ -1375,13 +1375,23 @@ const checkboxInputStyle = {
     return (
         <div>
             
- <nav style={{ background: '#333', padding: '1rem', display: 'flex', flexDirection: 'column' }}>
+<nav style={{ background: '#333', padding: '1rem' }}>
   {/* Filters Container */}
-  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-    <h2 style={{ color: '#fff', margin: '0', fontSize: '1rem' }}>Filters:</h2>
+  <div
+    style={{
+      display: 'flex',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      gap: '0.5rem',
+      rowGap: '1rem',
+    }}
+  >
+    <h2 style={{ color: '#fff', margin: '0', fontSize: '1rem', flexBasis: '100%' }}>
+      Filters:
+    </h2>
 
-    <select name="companyName" value={filters.companyName} onChange={handleFilterChange}
-      style={commonStyle}>
+    {/* All your select inputs */}
+    <select name="companyName" value={filters.companyName} onChange={handleFilterChange} style={commonStyle}>
       <option value="">Company Name</option>
       {companyNames.map((name, index) => (
         <option key={index} value={name}>{name}</option>
@@ -1402,24 +1412,21 @@ const checkboxInputStyle = {
       ))}
     </select>
 
-    <select value={filters.RDLocation} onChange={handlefilterrdlocationchange}
-      style={{ ...commonStyle, width: '120px' }}>
+    <select value={filters.RDLocation} onChange={handlefilterrdlocationchange} style={{ ...commonStyle, width: '120px' }}>
       <option value="">R&D Location</option>
       {Rdlocation.map((name, index) => (
         <option key={index} value={name}>{name}</option>
       ))}
     </select>
 
-    <select value={filters.HeadquartersLocation} onChange={handleheadquarterfilterchange}
-      style={commonStyle}>
+    <select value={filters.HeadquartersLocation} onChange={handleheadquarterfilterchange} style={commonStyle}>
       <option value="">HQ Location</option>
       {Array.isArray(headquarterlocation) && headquarterlocation.map((name, index) => (
         <option key={index} value={name}>{name}</option>
       ))}
     </select>
 
-    <select value={filters.ProductionLocation} onChange={handleproductfilterchange}
-      style={commonStyle}>
+    <select value={filters.ProductionLocation} onChange={handleproductfilterchange} style={commonStyle}>
       <option value="">All Production Locations</option>
       {productionlocation.map((location, index) => (
         <option key={index} value={location}>{location}</option>
@@ -1433,62 +1440,36 @@ const checkboxInputStyle = {
       ))}
     </select>
 
+    <select name="avoPlant" value={filters.avoPlant} onChange={handleInputChange} style={commonStyle}>
+      <option value="">AVOCarbon Plant</option>
+      {avoPlants.map(plant => (
+        <option key={plant.name} value={plant.name}>{plant.name}</option>
+      ))}
+    </select>
 
-<select name="avoPlant" value={filters.avoPlant} onChange={handleInputChange} style={commonStyle}>
-  <option value="">AVOCarbon Plant</option>
-  {avoPlants.map(plant => (
-    <option key={plant.name} value={plant.name}>{plant.name}</option>
-  ))}
-</select>
+    <button onClick={handleDownloadExcel} style={{ ...buttonStyle, backgroundColor: 'green', color: 'white', padding: '10px 20px' }}>
+      Download Excel
+    </button>
+    <button onClick={handleDownloadPDF} style={{ ...buttonStyle, backgroundColor: 'red', color: 'white', padding: '10px 20px' }}>
+      Download PDF
+    </button>
 
-<button
-  onClick={handleDownloadExcel}
-  style={{ ...buttonStyle, backgroundColor: 'green', color: 'white',  padding: '10px 20px'  }}
->
-  Download Excel
-</button>
-<button
-  onClick={handleDownloadPDF}
-  style={{ ...buttonStyle, backgroundColor: 'red', color: 'white', padding: '10px 20px'  }}
->
-  Download PDF
-</button>
-
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
       <label style={checkboxLabelStyle}>
-        <input
-          type="checkbox"
-          checked={showproductionLocation}
-          onChange={handleproductionLocationCheckbox}
-          style={checkboxInputStyle}
-        />
+        <input type="checkbox" checked={showproductionLocation} onChange={handleproductionLocationCheckbox} style={checkboxInputStyle} />
         Production Location
       </label>
       <label style={checkboxLabelStyle}>
-        <input
-          type="checkbox"
-          checked={showRdLocation}
-          onChange={handleRdLocationCheckbox}
-          style={checkboxInputStyle}
-        />
+        <input type="checkbox" checked={showRdLocation} onChange={handleRdLocationCheckbox} style={checkboxInputStyle} />
         R&D Location
       </label>
       <label style={checkboxLabelStyle}>
-        <input
-          type="checkbox"
-          checked={showHeadquarterLocation}
-          onChange={handleHeadquarterLocationCheckbox}
-          style={checkboxInputStyle}
-        />
+        <input type="checkbox" checked={showHeadquarterLocation} onChange={handleHeadquarterLocationCheckbox} style={checkboxInputStyle} />
         Headquarters Location
       </label>
     </div>
-
   </div>
-
-
 </nav>
-
             <div ref={mapContainerRef} style={{ width: '100vw', height: 'calc(100vh - 50px)' }} />
                  <Modal
         title={selectedCompany?.name}
