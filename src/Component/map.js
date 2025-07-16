@@ -1563,7 +1563,7 @@ const checkboxInputStyle = {
           height: '28px'
         }}
       >
-        Excel
+       Download Excel
       </button>
 
       <button 
@@ -1579,7 +1579,7 @@ const checkboxInputStyle = {
           height: '28px'
         }}
       >
-        PDF
+       Download PDF
       </button>
 
       <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}>
