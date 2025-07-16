@@ -1374,7 +1374,7 @@ const checkboxInputStyle = {
 
     return (
     <div>    
-   <nav style={{ background: '#333', padding: '0.5rem' }}>
+   <nav style={{ background: '#333', paddingBottom: '2rem' }}>
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
     <h2 style={{ color: '#fff', margin: '0', fontSize: '0.875rem', marginRight: '0.5rem' }}>Filters:</h2>
 
