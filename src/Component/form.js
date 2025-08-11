@@ -1751,22 +1751,17 @@ return (
                 )}
             </div>
             <div className="input-group">
-    <label htmlFor="product" className="label">Product</label>
-     <MultiSelect
-      options={optionskey}
-      value={optionskey.filter(option =>
-      formData.keymanagement.includes(option.value)
-      )}
-     onChange={handleKeyManagementChange}
-     labelledBy="Select Key Management Positions"
-     className="input"
-     hasSelectAll={false}
-    style={{ width: "100%" }}
-    />
-
+        <label htmlFor="product" className="label">Product</label>
+         <MultiSelect
+             options={options}
+             value={options.filter(option => formData.product.includes(option.value))} // Map product values to options
+             onChange={handleProductChange}
+             labelledBy={"Select Products"}
+             className="input"
+             hasSelectAll={false} />
             </div>
             </div>
-<div className="input-row">
+  <div className="input-row">
   <div className="input-group">
     <label htmlFor="productionlocation" className="label">Production location:</label>
     
