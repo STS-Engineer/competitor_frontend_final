@@ -81,8 +81,8 @@ const Form = () => {
     const [currentstepupdate,setCurrentStepUpdate]= useState(1)
     const [selectedProductionLocations, setSelectedProductionLocations] = useState([]);
     const [productionLocationInput, setProductionLocationInput] = useState('');
-    const [productionLocations, setProductionLocations] = useState([]);
-
+    const [selectedRole, setSelectedRole] = useState(null);
+    const [detailsValue, setDetailsValue] = useState("");
 
   
 
@@ -103,6 +103,30 @@ const Form = () => {
   { value: 'keydecisionmarker', label: 'Key Decision Makers' },
 ];
 
+useEffect(() => {
+  const existingRoles = optionskey
+    .filter(opt => formData[opt.value] && formData[opt.value].trim() !== "")
+    .map(opt => opt.value);
+
+  // Only prefill on first load if keymanagement is empty
+  if (formData.keymanagement.length === 0 && existingRoles.length > 0) {
+    setFormData(prev => ({
+      ...prev,
+      keymanagement: existingRoles
+    }));
+  }
+}, [optionskey]); // runs when optionskey is loaded
+
+
+
+
+const handleDetailsChange = (e) => {
+  const value = e.target.value;
+  setDetailsValue(value);
+  if (selectedRole) {
+    setFormData(prev => ({ ...prev, [selectedRole]: value }));
+  }
+};
     useEffect(() => {
         fetchCompanies();
     }, []);
@@ -143,6 +167,9 @@ useEffect(() => {
         const formattedProduct = selectedProducts.map(product => product.value).join(', ');
         setFormData({ ...formData, product: formattedProduct });
     };
+
+
+
 
 
     const handleModalClose = () => {
@@ -288,7 +315,8 @@ const handleSubmit = async (event) => {
 
     if (mode === 'add') {
       response = await axios.post('https://compt-back.azurewebsites.net/companies', submitData);
-               // Reset form fields
+      setSuccessMessage('⏳ Your request has been sent, waiting for approval');
+      // Reset form fields
       setFormData({
         ...formData, // Keep other fields if needed
        name: '',
@@ -337,14 +365,14 @@ const handleSubmit = async (event) => {
         generated_id: '',
         productionlocation: ''
       });
-      setSuccessMessage('⏳Your request has been sent, waiting for admin approval');
-      setSelectedProductionLocations([]); // Clear the chips
+      setSelectedProductionLocations([]); 
     } else if (mode === 'edit') {
       response = await axios.put(
         `https://compt-back.azurewebsites.net/companies/${selectedCompanyId}`, 
         submitData
       );
-     // Reset form fields
+
+            // Reset form fields
       setFormData({
         ...formData, // Keep other fields if needed
        name: '',
@@ -393,7 +421,7 @@ const handleSubmit = async (event) => {
         generated_id: '',
         productionlocation: ''
       });
-      setSuccessMessage('⏳Your request has been sent, waiting for admin approval');
+      setSuccessMessage('⏳ Your request has been sent, waiting for approval');
     }
 
     // Debug: Log the successful response
@@ -474,19 +502,31 @@ const handleSelectChange = async (e) => {
     const response = await axios.get(`https://compt-back.azurewebsites.net/companies/${selectedCompany.id}`);
     const selectedCompanyData = response.data;
 
-    // 🛠 Fix: Properly parse productionlocation into array of chips
-    const parsedProductionLocations = selectedCompanyData.productionlocation
-      ? selectedCompanyData.productionlocation.split(';').map(loc => loc.trim())
-      : [];
+    // Ensure keymanagement is always an array
+    const keyManagementData = Array.isArray(selectedCompanyData.keymanagement)
+      ? selectedCompanyData.keymanagement
+      : selectedCompanyData.keymanagement
+        ? [selectedCompanyData.keymanagement]
+        : [];
 
-    setSelectedProductionLocations(parsedProductionLocations); // ✅ chips appear correctly
-
+    // Set form data with proper keymanagement array
     setFormData({
       ...selectedCompanyData,
+      keymanagement: keyManagementData,
       productionlocation: selectedCompanyData.productionlocation,
     });
 
-    setSelectedRdLocation(selectedCompanyData.r_and_d_location);
+    // 2. AUTO-POPULATE the details input for the first role
+    if (keyManagementData.length > 0) {
+      const firstRole = keyManagementData[0];
+      setSelectedRole(firstRole);
+      // Set detailsValue from the corresponding field in formData
+      setDetailsValue(selectedCompanyData[firstRole] || "");
+    }
+
+    setProgressValue(Number(selectedCompanyData.rate) || 0);
+    // ... other state updates
+
   } catch (error) {
     console.error('Error fetching company details: ', error);
   }
@@ -494,10 +534,16 @@ const handleSelectChange = async (e) => {
 
 
     
-      const handleKeyManagementChange = (selectedOptions) => {
-        const selectedRoles = selectedOptions.map((option) => option.value);
-        setFormData({ ...formData, keymanagement: selectedRoles });
-      };
+const handleKeyManagementChange = (selectedOptions) => {
+  const selectedRoles = selectedOptions.map(option => option.value);
+
+  setFormData(prev => ({
+    ...prev,
+    keymanagement: selectedRoles
+  }));
+};
+
+
 
     const handleAddForm = () => {
         setShowAddForm(true);
@@ -1089,15 +1135,18 @@ return (
     >
       Key Management Positions
     </label>
-    <MultiSelect
-      options={optionskey} // Pass the key management roles as options
-      value={optionskey.filter(option => formData.keymanagement.includes(option.value))} // Filter selected roles
-      onChange={handleKeyManagementChange}
-      labelledBy="Select Key Management Positions"
-      className="input"
-      hasSelectAll={false} // Disable "Select All"
-      style={{ width: "100%" }} // Make sure it fits the row
+   <MultiSelect
+  options={optionskey}
+  value={optionskey.filter(option =>
+    formData.keymanagement.includes(option.value)
+  )}
+  onChange={handleKeyManagementChange}
+  labelledBy="Select Key Management Positions"
+  className="input"
+  hasSelectAll={false}
+  style={{ width: "100%" }}
     />
+
   </div>
         </div>
 
@@ -1124,17 +1173,18 @@ return (
           onChange={(e) =>
             setFormData({
               ...formData,
-              [role]: e.target.value,
+              [role]: e.target.value
             })
           }
           className="input modern-input"
           placeholder={`Enter name of ${optionskey.find((opt) => opt.value === role)?.label || role}`}
-          style={{ width: "100%" }} // Ensures inputs are aligned in the same row
+          style={{ width: "100%" }}
         />
       </div>
     ))}
   </div>
 )}
+
 
 
             <div className='input-row'>
@@ -1702,14 +1752,18 @@ return (
             </div>
             <div className="input-group">
     <label htmlFor="product" className="label">Product</label>
-    <MultiSelect
-             options={options}
-             value={options.filter(option => formData.product.includes(option.value))} // Map product values to options
-             onChange={handleProductChange}
-             labelledBy={"Select Products"}
-             className="input"
-             hasSelectAll={false}
-                />
+     <MultiSelect
+      options={optionskey}
+      value={optionskey.filter(option =>
+      formData.keymanagement.includes(option.value)
+      )}
+     onChange={handleKeyManagementChange}
+     labelledBy="Select Key Management Positions"
+     className="input"
+     hasSelectAll={false}
+    style={{ width: "100%" }}
+    />
+
             </div>
             </div>
 <div className="input-row">
@@ -1897,53 +1951,187 @@ return (
     >
       Key Management Positions
     </label>
-    <MultiSelect
-      options={optionskey} // Pass the key management roles as options
-      value={optionskey.filter(option => formData.keymanagement.includes(option.value))} // Filter selected roles
-      onChange={handleKeyManagementChange}
-      labelledBy="Select Key Management Positions"
-      className="input"
-      hasSelectAll={false} // Disable "Select All"
-      style={{ width: "100%" }} // Make sure it fits the row
-    />
+  <MultiSelect
+    options={optionskey}
+    value={optionskey.filter(option =>
+      formData.keymanagement.includes(option.value)
+    )}
+    onChange={handleKeyManagementChange}
+    labelledBy="Select Key Management Positions"
+    className="input"
+    hasSelectAll={false}
+    style={{ width: "100%" }}
+  />
+
+
   </div>
         </div>
 
-   {/* Details input appears conditionally */}
-  {formData.businessstrategies && (
-  <div className="input-group">
-    <label htmlFor="email" className="label">Details</label>
-    <input type="text" name="email" placeholder="Enter the details" className="input" />
-  </div>
-   )}
 
-{/* Key Management Dynamic Inputs */}
-{Array.isArray(formData.keymanagement) && formData.keymanagement.length > 0 &&(
-  <div className="input-row" style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-    {formData.keymanagement.map((role) => (
-      <div className="input-group" style={{ flex: 1 }} key={role}>
-        <label htmlFor={role} className="label">
-          Name of {optionskey.find((opt) => opt.value === role)?.label || role}
-        </label>
-        <input
-          type="text"
-          name={role}
-          value={formData[role] || ""}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              [role]: e.target.value,
-            })
-          }
-          className="input modern-input"
-          placeholder={`Enter name of ${optionskey.find((opt) => opt.value === role)?.label || role}`}
-          style={{ width: "100%" }} // Ensures inputs are aligned in the same row
-        />
-      </div>
-    ))}
+  {/* Role-specific inputs appear here */}
+{formData.keymanagement.includes("ceo") && (
+  <div style={{ marginBottom: 16 }}>
+    <input
+      type="text"
+      placeholder="Name of CEO"
+      value={formData.ceo}
+      onChange={e => setFormData(prev => ({ ...prev, ceo: e.target.value }))}
+      style={{
+        width: "100%",
+        padding: "10px 12px",
+        fontSize: 16,
+        border: "1.5px solid #ccc",
+        borderRadius: 6,
+        outline: "none",
+        boxSizing: "border-box",
+        transition: "border-color 0.3s ease",
+      }}
+      onFocus={e => (e.target.style.borderColor = "#4A90E2")}
+      onBlur={e => (e.target.style.borderColor = "#ccc")}
+    />
   </div>
-)} 
+)}
 
+{formData.keymanagement.includes("cfo") && (
+  <div style={{ marginBottom: 16 }}>
+    <input
+      type="text"
+      placeholder="Name of CFO"
+      value={formData.cfo}
+      onChange={e => setFormData(prev => ({ ...prev, cfo: e.target.value }))}
+      style={{
+        width: "100%",
+        padding: "10px 12px",
+        fontSize: 16,
+        border: "1.5px solid #ccc",
+        borderRadius: 6,
+        outline: "none",
+        boxSizing: "border-box",
+        transition: "border-color 0.3s ease",
+      }}
+      onFocus={e => (e.target.style.borderColor = "#4A90E2")}
+      onBlur={e => (e.target.style.borderColor = "#ccc")}
+    />
+  </div>
+)}
+
+{formData.keymanagement.includes("cto") && (
+  <div style={{ marginBottom: 16 }}>
+    <input
+      type="text"
+      placeholder="Name of CTO"
+      value={formData.cto}
+      onChange={e => setFormData(prev => ({ ...prev, cto: e.target.value }))}
+      style={{
+        width: "100%",
+        padding: "10px 12px",
+        fontSize: 16,
+        border: "1.5px solid #ccc",
+        borderRadius: 6,
+        outline: "none",
+        boxSizing: "border-box",
+        transition: "border-color 0.3s ease",
+      }}
+      onFocus={e => (e.target.style.borderColor = "#4A90E2")}
+      onBlur={e => (e.target.style.borderColor = "#ccc")}
+    />
+  </div>
+)}
+
+{formData.keymanagement.includes("rdhead") && (
+  <div style={{ marginBottom: 16 }}>
+    <input
+      type="text"
+      placeholder="Name of R&D Head"
+      value={formData.rdhead}
+      onChange={e => setFormData(prev => ({ ...prev, rdhead: e.target.value }))}
+      style={{
+        width: "100%",
+        padding: "10px 12px",
+        fontSize: 16,
+        border: "1.5px solid #ccc",
+        borderRadius: 6,
+        outline: "none",
+        boxSizing: "border-box",
+        transition: "border-color 0.3s ease",
+      }}
+      onFocus={e => (e.target.style.borderColor = "#4A90E2")}
+      onBlur={e => (e.target.style.borderColor = "#ccc")}
+    />
+  </div>
+)}
+
+{formData.keymanagement.includes("saleshead") && (
+  <div style={{ marginBottom: 16 }}>
+    <input
+      type="text"
+      placeholder="Name of Sales Head"
+      value={formData.saleshead}
+      onChange={e => setFormData(prev => ({ ...prev, saleshead: e.target.value }))}
+      style={{
+        width: "100%",
+        padding: "10px 12px",
+        fontSize: 16,
+        border: "1.5px solid #ccc",
+        borderRadius: 6,
+        outline: "none",
+        boxSizing: "border-box",
+        transition: "border-color 0.3s ease",
+      }}
+      onFocus={e => (e.target.style.borderColor = "#4A90E2")}
+      onBlur={e => (e.target.style.borderColor = "#ccc")}
+    />
+  </div>
+)}
+
+{formData.keymanagement.includes("productionhead") && (
+  <div style={{ marginBottom: 16 }}>
+    <input
+      type="text"
+      placeholder="Name of Production Head"
+      value={formData.productionhead}
+      onChange={e => setFormData(prev => ({ ...prev, productionhead: e.target.value }))}
+      style={{
+        width: "100%",
+        padding: "10px 12px",
+        fontSize: 16,
+        border: "1.5px solid #ccc",
+        borderRadius: 6,
+        outline: "none",
+        boxSizing: "border-box",
+        transition: "border-color 0.3s ease",
+      }}
+      onFocus={e => (e.target.style.borderColor = "#4A90E2")}
+      onBlur={e => (e.target.style.borderColor = "#ccc")}
+    />
+  </div>
+)}
+
+{formData.keymanagement.includes("keydecisionmarker") && (
+  <div style={{ marginBottom: 16 }}>
+    <input
+      type="text"
+      placeholder="Name of Key Decision Maker"
+      value={formData.keydecisionmarker}
+      onChange={e => setFormData(prev => ({ ...prev, keydecisionmarker: e.target.value }))}
+      style={{
+        width: "100%",
+        padding: "10px 12px",
+        fontSize: 16,
+        border: "1.5px solid #ccc",
+        borderRadius: 6,
+        outline: "none",
+        boxSizing: "border-box",
+        transition: "border-color 0.3s ease",
+      }}
+      onFocus={e => (e.target.style.borderColor = "#4A90E2")}
+      onBlur={e => (e.target.style.borderColor = "#ccc")}
+    />
+  </div>
+)}
+
+
+  
             <div className='input-row'>
                 <div className="input-group">
                     <h3 className='text-bold'>Growth rate</h3>
