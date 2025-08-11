@@ -1384,8 +1384,8 @@ return (
                     <label>Investing Cash Flow (€)</label>
                     <Input
                         type="text"
-                        value={formData.investingcashFlow}
-                        onChange={(e) => setFormData({ ...formData, investingcashFlow: e.target.value })}
+                        value={formData.investingcashflow}
+                        onChange={(e) => setFormData({ ...formData, investingcashflow: e.target.value })}
                         className="modern-input"
                     />
                 </div>
@@ -2324,8 +2324,8 @@ return (
                     <label>Investing Cash Flow (€)</label>
                     <Input
                         type="text"
-                        value={formData.investingcashFlow}
-                        onChange={(e) => setFormData({ ...formData, investingcashFlow: e.target.value })}
+                        value={formData.investingcashflow}
+                        onChange={(e) => setFormData({ ...formData, investingcashflow: e.target.value })}
                         className="modern-input"
                     />
                 </div>
