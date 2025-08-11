@@ -333,7 +333,7 @@ const handleSubmit = async (event) => {
         keycustomers: '',
         region: '',
         foundingyear: '', // Add founding year field
-        rate: '',
+        rate: 0,
         offeringproducts:'',
         pricingstrategy: '',
         customerneeds:'',
@@ -365,6 +365,7 @@ const handleSubmit = async (event) => {
         generated_id: '',
         productionlocation: ''
       });
+      setProgressValue(0);
       setSelectedProductionLocations([]); 
     } else if (mode === 'edit') {
       response = await axios.put(
@@ -389,7 +390,7 @@ const handleSubmit = async (event) => {
         keycustomers: '',
         region: '',
         foundingyear: '', // Add founding year field
-        rate: '',
+        rate: 0,
         offeringproducts:'',
         pricingstrategy: '',
         customerneeds:'',
@@ -421,6 +422,7 @@ const handleSubmit = async (event) => {
         generated_id: '',
         productionlocation: ''
       });
+      setProgressValue(0);
       setSuccessMessage('⏳ Your request has been sent, waiting for approval');
     }
 
