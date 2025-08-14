@@ -6,6 +6,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import Map from './Component/map';
 import AccessRequest from './Component/AccessRequest'; // Ce composant doit exister
 import Navbar from './Components/Navbar';
+import Upload from './Component/uploadfile';
 
 function App() {
   const [accessGranted, setAccessGranted] = useState(null); // null = chargement en cours
@@ -61,6 +62,7 @@ const handleAccessGranted = (email) => {
         <Routes>
           <Route path="/" element={<Homepage />} />
           <Route path="/map" element={<Map />} />
+          <Route path="/upload" element={<Upload />} />
           <Route
            path="/form"
            element={
