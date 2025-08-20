@@ -1613,61 +1613,65 @@ const checkboxInputStyle = {
   </div>
     </nav>
       <div ref={mapContainerRef} style={{ width: '100vw', height: 'calc(100vh - 50px)' }} />
-      <Modal
-        title={selectedCompany?.name}
-        open={isModalVisible}
-        onCancel={handleCancel}
-        footer={null}
-      >
-        {selectedCompany && (
-          <div>
+    <Modal
+     title={selectedCompany?.name}
+     open={isModalVisible}
+     onCancel={handleCancel}
+     footer={null}
+    >
+  {selectedCompany && (
+    <div>
+      {/* Product Images Section */}
+      <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginTop: 10 }}>
+        {(
+          Array.isArray(selectedCompany.product)
+            ? selectedCompany.product
+            : selectedCompany.product.split(",")
+        ).map((prod, index) => {
+          const cleanProd = prod.trim().toLowerCase();
+          return (
+            <img
+              key={index}
+              src={productImages[cleanProd] || ""}
+              alt={prod.trim()}
+              style={{
+                width: "100px",
+                height: "auto",
+                borderRadius: "8px",
+                border: "2px solid #ddd",
+              }}
+            />
+          );
+        })}
+      </div>
 
-          <div style={{ display: "flex", justifyContent: "center", marginTop: 10 }}>
-              <img
-                src={productImages[selectedCompany.product.toLowerCase()] || ""}
-                alt={selectedCompany.product}
-                style={{
-                  width: "100px",
-                  height: "auto",
-                  borderRadius: "8px",
-                  border: "2px solid #ddd",
-                }}
-              />
-            </div>
-            <p>
-              <strong>Product:</strong>{" "}
-                {selectedCompany.product}
-            </p>
-            <p>
-              <strong>R&D Location:</strong> {selectedCompany.r_and_d_location}
-            </p>
-            <p>
-              <strong>Headquarters:</strong> {selectedCompany.headquarters_location}
-            </p>
+      <p>
+        <strong>Product:</strong>{" "}
+        {Array.isArray(selectedCompany.product)
+          ? selectedCompany.product.join(", ")
+          : selectedCompany.product
+              .split(",")
+              .map(p => p.trim())
+              .join(", ")}
+      </p>
 
-            <p>
-              <strong>Region:</strong> {selectedCompany.region}
-            </p>
-            <p>
-              <strong>Country:</strong> {selectedCompany.country}
-            </p>
+      <p><strong>R&D Location:</strong> {selectedCompany.r_and_d_location}</p>
+      <p><strong>Headquarters:</strong> {selectedCompany.headquarters_location}</p>
+      <p><strong>Region:</strong> {selectedCompany.region}</p>
+      <p><strong>Country:</strong> {selectedCompany.country}</p>
+      <p><strong>Founding Year:</strong> {selectedCompany.foundingyear}</p>
 
-            <p>
-              <strong>Founding Year:</strong> {selectedCompany.foundingyear}
-            </p>
-                   
-           {/* Executive Information Section */}
-            {selectedCompany.ceo && <p><strong>CEO:</strong> {selectedCompany.ceo}</p>}
-            {selectedCompany.cfo && <p><strong>CFO:</strong> {selectedCompany.cfo}</p>}
-            {selectedCompany.cto && <p><strong>CTO:</strong> {selectedCompany.cto}</p>}
-            {selectedCompany.rdhead && <p><strong>R&D Head:</strong> {selectedCompany.rdhead}</p>}
-            {selectedCompany.saleshead && <p><strong>Sales Head:</strong> {selectedCompany.saleshead}</p>}
-            {selectedCompany.productionhead && <p><strong>Production Head:</strong> {selectedCompany.productionhead}</p>}
-            {selectedCompany.keydecisionmarker && <p><strong>Key Decision Marker:</strong> {selectedCompany.keydecisionmarker}</p>}
-          
-          </div>
-        )}
-      </Modal>
+      {/* Executive Information Section */}
+      {selectedCompany.ceo && <p><strong>CEO:</strong> {selectedCompany.ceo}</p>}
+      {selectedCompany.cfo && <p><strong>CFO:</strong> {selectedCompany.cfo}</p>}
+      {selectedCompany.cto && <p><strong>CTO:</strong> {selectedCompany.cto}</p>}
+      {selectedCompany.rdhead && <p><strong>R&D Head:</strong> {selectedCompany.rdhead}</p>}
+      {selectedCompany.saleshead && <p><strong>Sales Head:</strong> {selectedCompany.saleshead}</p>}
+      {selectedCompany.productionhead && <p><strong>Production Head:</strong> {selectedCompany.productionhead}</p>}
+      {selectedCompany.keydecisionmarker && <p><strong>Key Decision Marker:</strong> {selectedCompany.keydecisionmarker}</p>}
+    </div>
+  )}
+</Modal>
         </div>
     );
 }
