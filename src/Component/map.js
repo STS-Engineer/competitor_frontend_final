@@ -11,7 +11,7 @@ import { Modal } from 'antd';
 import './map.css'  
  
  
-mapboxgl.accessToken = 'pk.eyJ1IjoibW9vdGV6ZmFyd2EiLCJhIjoiY2x1Z3BoaTFqMW9hdjJpcGdibnN1djB5cyJ9.It7emRJnE-Ee59ysZKBOJw';
+mapboxgl.accessToken = 'pk.eyJ1Ijoic3RzLWVuZ2luZWVyIiwiYSI6ImNsdjN2bGR2cTAydWIydHF0ZWMyYTlsbHUifQ.EBjvuJ70JuEXJgjTdDeK1g';
 const avoPlants = [
     { name: 'Tunisia', coordinates: [9.5375, 33.8869] },
     { name: 'Poitiers', coordinates: [0.3404, 46.5802] },
