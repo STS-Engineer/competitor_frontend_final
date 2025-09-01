@@ -222,7 +222,7 @@ useEffect(() => {
     const fetchRdLocationSuggestions = async (inputValue) => {
         try {
             setLoadingRdSuggestions(true);
-            const response = await axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(inputValue)}.json?access_token=pk.eyJ1IjoibW9vdGV6ZmFyd2EiLCJhIjoiY2x1Z3BoaTFqMW9hdjJpcGdibnN1djB5cyJ9.It7emRJnE-Ee59ysZKBOJw`);
+            const response = await axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(inputValue)}.json?access_token=pk.eyJ1Ijoic3RzLWVuZ2luZWVyIiwiYSI6ImNsdjN2bGR2cTAydWIydHF0ZWMyYTlsbHUifQ.EBjvuJ70JuEXJgjTdDeK1g`);
             setRdLocationSuggestions(response.data.features.map(feature => feature.place_name));
         } catch (error) {
             console.error('Error fetching R&D location suggestions: ', error);
@@ -240,7 +240,7 @@ useEffect(() => {
     const fetchheadquarterSuggestions = async (inputValue) => {
         try {
             setLoadingheadquarterSuggestions(true);
-            const response = await axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(inputValue)}.json?access_token=pk.eyJ1IjoibW9vdGV6ZmFyd2EiLCJhIjoiY2x1Z3BoaTFqMW9hdjJpcGdibnN1djB5cyJ9.It7emRJnE-Ee59ysZKBOJw`);
+            const response = await axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(inputValue)}.json?access_token=pk.eyJ1Ijoic3RzLWVuZ2luZWVyIiwiYSI6ImNsdjN2bGR2cTAydWIydHF0ZWMyYTlsbHUifQ.EBjvuJ70JuEXJgjTdDeK1g`);
             setheadquarterSuggestions(response.data.features.map(feature => feature.place_name));
         } catch (error) {
             console.error('Error fetching R&D location suggestions: ', error);
@@ -259,7 +259,7 @@ useEffect(() => {
         const fetchproductionLocationSuggestions = async (inputValue) => {
         try {
             setLoadingproductionLocationSuggestions(true);
-            const response = await axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(inputValue)}.json?access_token=pk.eyJ1IjoibW9vdGV6ZmFyd2EiLCJhIjoiY2x1Z3BoaTFqMW9hdjJpcGdibnN1djB5cyJ9.It7emRJnE-Ee59ysZKBOJw`);
+            const response = await axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(inputValue)}.json?access_token=pk.eyJ1Ijoic3RzLWVuZ2luZWVyIiwiYSI6ImNsdjN2bGR2cTAydWIydHF0ZWMyYTlsbHUifQ.EBjvuJ70JuEXJgjTdDeK1g`);
             setProductionLocationSuggestions(response.data.features.map(feature => feature.place_name));
         } catch (error) {
             console.error('Error fetching R&D location suggestions: ', error);
