@@ -5,7 +5,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import Swal from 'sweetalert2';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom'; 
 import XlsxPopulate from 'xlsx-populate/browser/xlsx-populate';
 import { Modal } from 'antd';
 import './map.css'  
