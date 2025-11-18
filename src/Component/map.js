@@ -1033,59 +1033,72 @@ const handleproductionLocationCheckbox = (e) => {
 
 
 // Modified handleDownloadPDF function
-// In your Map component
 const handleDownloadPDF = async () => {
   try {
     Swal.fire({
-      title: 'Generating PDF...',
-      text: 'Please wait',
+      title: 'Capturing Map...',
+      text: 'Please wait while we capture the map with markers',
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading()
     });
 
-    // Use Mapbox's built-in renderer to capture the canvas
-    const canvas = map.current.getCanvas();
+    // Force map to render completely
+    map.current.repaint = true;
     
-    // Create a new canvas with proper dimensions
-    const exportCanvas = document.createElement('canvas');
-    const ctx = exportCanvas.getContext('2d');
-    
-    // Set canvas size
-    exportCanvas.width = canvas.width;
-    exportCanvas.height = canvas.height;
-    
-    // Draw the map canvas
-    ctx.drawImage(canvas, 0, 0);
-    
-    // Add markers and overlays if needed
-    await addOverlaysToCanvas(exportCanvas);
+    // Wait for map to be fully loaded and markers to be visible
+    await new Promise(resolve => {
+      if (map.current.loaded()) {
+        setTimeout(resolve, 1000);
+      } else {
+        map.current.once('idle', () => setTimeout(resolve, 1000));
+      }
+    });
 
-    // Convert to PDF
-    const pdf = new jsPDF('landscape', 'px', [exportCanvas.width, exportCanvas.height]);
-    const imgData = exportCanvas.toDataURL('image/png');
+    // Capture the entire map container (includes markers)
+    const mapContainer = mapContainerRef.current;
     
-    pdf.addImage(imgData, 'PNG', 0, 0, exportCanvas.width, exportCanvas.height);
-    pdf.save(`Map_Export_${new Date().toISOString().slice(0,10)}.pdf`);
+    const canvas = await html2canvas(mapContainer, {
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: '#ffffff',
+      scale: 2, // Higher resolution for clarity
+      logging: false,
+      removeContainer: true,
+      onclone: (clonedDoc) => {
+        // Ensure all elements are visible in the clone
+        const clonedMap = clonedDoc.getElementById(mapContainer.id);
+        if (clonedMap) {
+          // Force markers to be visible
+          const markers = clonedMap.querySelectorAll('.mapboxgl-marker');
+          markers.forEach(marker => {
+            marker.style.opacity = '1';
+            marker.style.visibility = 'visible';
+            marker.style.display = 'block';
+          });
+          
+          // Force canvas to be fully rendered
+          const mapCanvas = clonedMap.querySelector('.mapboxgl-canvas');
+          if (mapCanvas) {
+            mapCanvas.style.visibility = 'visible';
+            mapCanvas.style.opacity = '1';
+          }
+        }
+      }
+    });
+
+    // Create PDF with proper dimensions
+    const pdf = new jsPDF('landscape', 'px', [canvas.width, canvas.height]);
+    pdf.addImage(canvas, 'PNG', 0, 0, canvas.width, canvas.height);
+    
+    pdf.save(`Map_With_Markers_${new Date().toISOString().slice(0,10)}.pdf`);
 
     Swal.close();
-    Swal.fire('Success!', 'PDF downloaded successfully', 'success');
+    Swal.fire('Success!', 'PDF with markers downloaded successfully', 'success');
 
   } catch (error) {
-    console.error('PDF error:', error);
-    Swal.fire('Error', 'Failed to download PDF', 'error');
+    console.error('PDF export error:', error);
+    Swal.fire('Error', 'Failed to capture map with markers', 'error');
   }
-};
-
-const addOverlaysToCanvas = async (canvas) => {
-  // This function can add custom overlays if needed
-  const ctx = canvas.getContext('2d');
-  
-  // Add title or other custom elements
-  ctx.font = '20px Arial';
-  ctx.fillStyle = 'black';
-  ctx.fillText('Map Export', 20, 30);
-  
-  return canvas;
 };
 
    const handleDownloadExcel = async () => {
