@@ -1036,113 +1036,56 @@ const handleproductionLocationCheckbox = (e) => {
 // In your Map component
 const handleDownloadPDF = async () => {
   try {
-const visibleCompanies = companies.filter(company => {
-  const regionFilter = (filters.region || '').toLowerCase();
-  const nameFilter = (filters.companyName || '').toLowerCase();
-  const productFilter = (filters.Product || '').toLowerCase();
-
-  return (
-    ((company.region || '').toLowerCase() === regionFilter || !regionFilter) &&
-    ((company.name || '').toLowerCase().includes(nameFilter) || !nameFilter) &&
-    ((company.product || '').toLowerCase().includes(productFilter) || !productFilter)
-  );
-});
-
-    if (visibleCompanies.length === 0) {
-      alert('No companies match the current filters.');
-      return;
-    }
-
-    // Clear existing markers
-    if (markersRef.current.length > 0) {
-      markersRef.current.forEach(marker => marker.remove());
-      markersRef.current = [];
-    }
-
-    const bounds = new mapboxgl.LngLatBounds();
-    const coordinatesPromises = visibleCompanies.map(async (company) => {
-      const location = company.r_and_d_location || company.headquarters_location;
-      if (!location) return null;
-
-      try {
-        const response = await axios.get(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(location)}.json`,
-          { params: { access_token: mapboxgl.accessToken } }
-        );
-        if (response.data.features?.length > 0) {
-          const coords = response.data.features[0].geometry.coordinates;
-          bounds.extend(coords);
-          return coords;
-        }
-      } catch (error) {
-        console.warn('Geocoding failed for:', location, error);
-        return null;
-      }
+    Swal.fire({
+      title: 'Generating PDF...',
+      text: 'Please wait',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
     });
 
-    await Promise.all(coordinatesPromises);
+    // Use Mapbox's built-in renderer to capture the canvas
+    const canvas = map.current.getCanvas();
+    
+    // Create a new canvas with proper dimensions
+    const exportCanvas = document.createElement('canvas');
+    const ctx = exportCanvas.getContext('2d');
+    
+    // Set canvas size
+    exportCanvas.width = canvas.width;
+    exportCanvas.height = canvas.height;
+    
+    // Draw the map canvas
+    ctx.drawImage(canvas, 0, 0);
+    
+    // Add markers and overlays if needed
+    await addOverlaysToCanvas(exportCanvas);
 
-    if (bounds.isEmpty()) {
-      alert('No valid locations found for current filters');
-      return;
-    }
+    // Convert to PDF
+    const pdf = new jsPDF('landscape', 'px', [exportCanvas.width, exportCanvas.height]);
+    const imgData = exportCanvas.toDataURL('image/png');
+    
+    pdf.addImage(imgData, 'PNG', 0, 0, exportCanvas.width, exportCanvas.height);
+    pdf.save(`Map_Export_${new Date().toISOString().slice(0,10)}.pdf`);
 
+    Swal.close();
+    Swal.fire('Success!', 'PDF downloaded successfully', 'success');
 
-
-
-    // Wait a bit more to make sure markers are added
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Re-add markers
-    addMarkersForFilteredCompanies();
-    addMarkersheadquarterForFilteredCompanies();
-    addAvoPlantMarkers();
-
-    // Wait for one more idle event to ensure DOM markers are there
-    await new Promise(resolve => {
-      map.current.once('idle', resolve);
-    });
-
-    // Capture the entire map container (canvas + markers)
-    const mapElement = mapContainerRef.current;
-
-    const canvas = await html2canvas(mapElement, {
-      useCORS: true,
-      logging: false,
-      backgroundColor: null
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('landscape', 'pt', 'a4');
-
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-
-    const aspectRatio = canvas.width / canvas.height;
-    let width = pdfWidth;
-    let height = width / aspectRatio;
-
-    if (height > pdfHeight) {
-      height = pdfHeight;
-      width = height * aspectRatio;
-    }
-
-    const x = (pdfWidth - width) / 2;
-    const y = (pdfHeight - height) / 2;
-
-    pdf.addImage(imgData, 'PNG', x, y, width, height);
-
-    // Restore original view
-
-    addMarkersForFilteredCompanies();
-    addMarkersheadquarterForFilteredCompanies();
-    addAvoPlantMarkers();
-
-    pdf.save('Filtered_Map.pdf');
   } catch (error) {
-    console.error('PDF generation failed:', error);
-    alert('Failed to generate PDF. Check console for details.');
+    console.error('PDF error:', error);
+    Swal.fire('Error', 'Failed to download PDF', 'error');
   }
+};
+
+const addOverlaysToCanvas = async (canvas) => {
+  // This function can add custom overlays if needed
+  const ctx = canvas.getContext('2d');
+  
+  // Add title or other custom elements
+  ctx.font = '20px Arial';
+  ctx.fillStyle = 'black';
+  ctx.fillText('Map Export', 20, 30);
+  
+  return canvas;
 };
 
    const handleDownloadExcel = async () => {
