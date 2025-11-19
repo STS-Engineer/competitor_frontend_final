@@ -55,7 +55,7 @@ function Map() {
     const hqMarkersRef = useRef([]);      // For Headquarters
     const productionMarkersRef = useRef([]); // For Production locations
     const [isInitialLoad, setIsInitialLoad] = useState(true);
-
+    const [countryBoundaries, setCountryBoundaries] = useState({});
     
  
 useEffect(() => {
@@ -87,6 +87,22 @@ useEffect(() => {
 }, []);
 
 
+const isLocationInCountry = useCallback((coordinates, countryName) => {
+    if (!countryName || !coordinates) return true;
+    
+    const boundaries = countryBoundaries[countryName.toLowerCase()];
+    if (!boundaries) return true;
+
+    const [lng, lat] = coordinates;
+    return (
+        lat >= boundaries.minLat &&
+        lat <= boundaries.maxLat &&
+        lng >= boundaries.minLng &&
+        lng <= boundaries.maxLng
+    );
+}, [countryBoundaries]);
+
+ 
 
 
      const addAvoPlantMarkers = useCallback(() => {
@@ -254,7 +270,10 @@ const addMarkersForFilteredCompanies = useCallback(() => {
     .then(response => {
       if (response.data.features?.length > 0) {
         const coordinates = response.data.features[0].geometry.coordinates;
-
+           // Apply geographic country filter
+        if (filterCountry && !isLocationInCountry(coordinates, filterCountry)) {
+          return null;
+        }
         // Apply region boundary filter if selected
         if (filterRegion && regionBoundaries[filterRegion]) {
           const boundaries = regionBoundaries[filterRegion];
@@ -321,7 +340,7 @@ const addMarkersForFilteredCompanies = useCallback(() => {
       console.log(`Showing ${filteredCompanies.length} R&D locations matching filters`);
     }
   });
-}, [companies, filters, map, regionBoundaries, showModal, showRdLocation]);
+}, [companies, filters, map, regionBoundaries, showModal, showRdLocation, isLocationInCountry]);
 
 
  
@@ -379,6 +398,10 @@ const addMarkersheadquarterForFilteredCompanies = useCallback(() => {
         if (response.data.features && response.data.features.length > 0) {
           const coordinates = response.data.features[0].geometry.coordinates;
 
+            // Apply geographic country filter
+        if (filters.country && !isLocationInCountry(coordinates, filters.country)) {
+          return null;
+        }
           // Apply region filter if selected
           if (filters.region) {
             const boundaries = regionBoundaries[filters.region];
@@ -424,7 +447,7 @@ const addMarkersheadquarterForFilteredCompanies = useCallback(() => {
         console.error('Error fetching HQ location:', error);
       });
   });
-}, [companies, filters, map, regionBoundaries, showModal, showHeadquarterLocation]);
+}, [companies, filters, map, regionBoundaries, showModal, showHeadquarterLocation, isLocationInCountry]);
 
  
 const addMarkersproductionForFilteredCompanies = useCallback(() => {
@@ -491,6 +514,11 @@ const addMarkersproductionForFilteredCompanies = useCallback(() => {
           const coordinates = response.data.features[0].geometry.coordinates;
           const [lng, lat] = coordinates;
 
+           // Apply geographic country filter
+        if (filters.country && !isLocationInCountry(coordinates, filters.country)) {
+          return null;
+        }
+
           // Apply region boundary filter if selected
           if (filters.region) {
             const boundaries = regionBoundaries[filters.region];
@@ -537,7 +565,8 @@ const addMarkersproductionForFilteredCompanies = useCallback(() => {
   filters.ProductionLocation,
   showproductionLocation,
   map,
-  regionBoundaries
+  regionBoundaries,
+  isLocationInCountry
 ]);
 
 
