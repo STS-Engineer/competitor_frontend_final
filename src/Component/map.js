@@ -201,6 +201,54 @@ const addMarker = (company, location, color, locationType) => {
       South_Asia: { minLat: 5, maxLat: 35, minLng: 65, maxLng: 106 },
       NAFTA: { minLat: 10, maxLat: 72, minLng: -168, maxLng: -34 },
     }), []);
+
+  const getCountryBoundaries = useCallback(async (countryName) => {
+    try {
+        const response = await axios.get(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(countryName)}.json`,
+            {
+                params: {
+                    access_token: mapboxgl.accessToken,
+                    types: 'country',
+                    limit: 1
+                }
+            }
+        );
+
+        if (response.data.features && response.data.features.length > 0) {
+            const bbox = response.data.features[0].bbox;
+            if (bbox) {
+                return {
+                    minLng: bbox[0],
+                    minLat: bbox[1],
+                    maxLng: bbox[2],
+                    maxLat: bbox[3]
+                };
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error('Error fetching country boundaries:', error);
+        return null;
+    }
+}, []);
+
+ useEffect(() => {
+    const loadCountryBoundaries = async () => {
+        const boundaries = {};
+        for (const country of countries) {
+            const countryBounds = await getCountryBoundaries(country);
+            if (countryBounds) {
+                boundaries[country.toLowerCase()] = countryBounds;
+            }
+        }
+        setCountryBoundaries(boundaries);
+    };
+
+    if (countries.length > 0) {
+        loadCountryBoundaries();
+    }
+}, [countries, getCountryBoundaries]);
    
 
 const addMarkersForFilteredCompanies = useCallback(() => {
@@ -570,6 +618,9 @@ const addMarkersproductionForFilteredCompanies = useCallback(() => {
 ]);
 
 
+
+
+
 const clearAllMarkers = () => {
   // Clear R&D markers
   rdMarkersRef.current.forEach(marker => marker.remove());
@@ -702,7 +753,8 @@ useEffect(() => {
   addMarkersForFilteredCompanies,
   addMarkersheadquarterForFilteredCompanies,
   addMarkersproductionForFilteredCompanies,
-  addAvoPlantMarkers
+  addAvoPlantMarkers,
+  isLocationInCountry
 ]);
 
 
