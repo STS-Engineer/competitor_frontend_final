@@ -597,6 +597,11 @@ const addMarkersproductionForFilteredCompanies = useCallback(() => {
             `))
             .addTo(map.current);
 
+              // Add click event for modal
+           marker.getElement().addEventListener('click', (e) => {
+           e.stopPropagation();
+           showModal(company);
+          }); 
           productionMarkersRef.current.push(marker);
         })
         .catch(error => {
